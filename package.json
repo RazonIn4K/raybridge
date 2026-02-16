@@ -23,7 +23,8 @@
     "@opentui/react": "^0.1.74",
     "@raycast/api": "^1.104.3",
     "express": "^5.0.1",
-    "react": "^19.0.0"
+    "react": "^19.0.0",
+    "unicode-animations": "^1.0.3"
   },
   "devDependencies": {
     "@types/bun": "latest",

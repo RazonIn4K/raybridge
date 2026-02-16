@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
-
 import { discoverExtensions, type ExtensionEntry } from "./discovery.js";
+import { runWithSpinner, startSpinner } from "./spinner.js";
 import {
   loadToolsConfig,
   saveToolsConfig,
@@ -69,16 +69,22 @@ function printSection(
 }
 
 async function listExtensions(): Promise<void> {
-  const [extensions, rawConfig] = await Promise.all([
-    discoverExtensions(),
-    loadToolsConfig(),
-  ]);
-
-  const { config, didMigrate } = normalizeLegacyConfig(rawConfig, extensions);
-  if (didMigrate) {
-    await saveToolsConfig(config);
-    console.error("raybridge: Migrated config to blocklist-only format");
-  }
+  const { extensions, config } = await runWithSpinner(
+    "Loading extensions...",
+    async () => {
+      const [exts, rawConfig] = await Promise.all([
+        discoverExtensions(),
+        loadToolsConfig(),
+      ]);
+      const { config: cfg, didMigrate } = normalizeLegacyConfig(rawConfig, exts);
+      if (didMigrate) {
+        await saveToolsConfig(cfg);
+        console.error("raybridge: Migrated config to blocklist-only format");
+      }
+      return { extensions: exts, config: cfg };
+    },
+    process.stdout
+  );
 
   const filteredExtensions = filterExtensions(extensions, config);
 
@@ -121,8 +127,13 @@ async function main(): Promise<void> {
   switch (command) {
     case undefined:
     case "config": {
-      const { launchTUI } = await import("./tui.js");
-      await launchTUI();
+      const stopSpinner = startSpinner("Launching RayBridge...", process.stdout, "orbit");
+      try {
+        const { launchTUI } = await import("./tui.js");
+        await launchTUI({ onReady: stopSpinner });
+      } finally {
+        stopSpinner();
+      }
       break;
     }
     case "list":

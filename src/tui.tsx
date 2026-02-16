@@ -11,6 +11,7 @@ import {
   normalizeLegacyConfig,
   type ToolsConfig,
 } from "./config.js";
+import { getSpinnerFrames, isInteractive, MIN_LOADING_MS } from "./spinner.js";
 
 // UI colors with visual hierarchy
 const COLORS = {
@@ -75,6 +76,7 @@ interface AppState {
   scrollOffset: number;
   expanded: Set<string>;
   loading: boolean;
+  saving: boolean;
   saved: boolean;
   error: string | null;
 }
@@ -91,12 +93,20 @@ function App({ onExit }: AppProps) {
     scrollOffset: 0,
     expanded: new Set(),
     loading: true,
+    saving: false,
     saved: false,
     error: null,
   });
 
   // Track terminal dimensions for responsive layout
   const [terminalSize, setTerminalSize] = useState(getTerminalSize);
+
+  // Animated loading spinner (braille frames when TTY, else static fallback)
+  const [spinnerFrame, setSpinnerFrame] = useState(0);
+  const spinnerFrames = getSpinnerFrames("braille");
+  const loadingIndicator = isInteractive(process.stdout)
+    ? spinnerFrames.frames[spinnerFrame % spinnerFrames.frames.length]
+    : "◈";
 
   useEffect(() => {
     const handleResize = () => setTerminalSize(getTerminalSize());
@@ -105,6 +115,15 @@ function App({ onExit }: AppProps) {
       process.stdout.off("resize", handleResize);
     };
   }, []);
+
+  useEffect(() => {
+    if ((!state.loading && !state.saving) || !isInteractive(process.stdout)) return;
+    const timer = setInterval(
+      () => setSpinnerFrame((f) => (f + 1) % spinnerFrames.frames.length),
+      spinnerFrames.interval
+    );
+    return () => clearInterval(timer);
+  }, [state.loading, state.saving, spinnerFrames.frames.length, spinnerFrames.interval]);
 
   // Calculate visible rows (terminal height minus header and footer)
   const visibleRows = useMemo(() => {
@@ -144,6 +163,7 @@ function App({ onExit }: AppProps) {
 
   useEffect(() => {
     async function load() {
+      const start = Date.now();
       try {
         const [extensions, rawConfig] = await Promise.all([
           discoverExtensions(),
@@ -154,16 +174,23 @@ function App({ onExit }: AppProps) {
           await saveToolsConfig(config);
         }
 
-        const initialCursor = 0;
+        const elapsed = Date.now() - start;
+        if (elapsed < MIN_LOADING_MS) {
+          await new Promise((r) => setTimeout(r, MIN_LOADING_MS - elapsed));
+        }
 
         setState((s) => ({
           ...s,
           extensions,
           config,
-          cursor: initialCursor,
+          cursor: 0,
           loading: false,
         }));
       } catch (err: unknown) {
+        const elapsed = Date.now() - start;
+        if (elapsed < MIN_LOADING_MS) {
+          await new Promise((r) => setTimeout(r, MIN_LOADING_MS - elapsed));
+        }
         const message = err instanceof Error ? err.message : String(err);
         setState((s) => ({
           ...s,
@@ -275,12 +302,23 @@ function App({ onExit }: AppProps) {
   }, []);
 
   const save = useCallback(async () => {
+    if (state.saving) return;
+    setState((s) => ({ ...s, saving: true }));
+    const start = Date.now();
     try {
       await saveToolsConfig(state.config);
-      setState((s) => ({ ...s, saved: true }));
+      const elapsed = Date.now() - start;
+      if (elapsed < MIN_LOADING_MS) {
+        await new Promise((r) => setTimeout(r, MIN_LOADING_MS - elapsed));
+      }
+      setState((s) => ({ ...s, saving: false, saved: true }));
     } catch (err: unknown) {
+      const elapsed = Date.now() - start;
+      if (elapsed < MIN_LOADING_MS) {
+        await new Promise((r) => setTimeout(r, MIN_LOADING_MS - elapsed));
+      }
       const message = err instanceof Error ? err.message : String(err);
-      setState((s) => ({ ...s, error: `Save failed: ${message}` }));
+      setState((s) => ({ ...s, saving: false, error: `Save failed: ${message}` }));
     }
   }, [state.config]);
 
@@ -315,7 +353,7 @@ function App({ onExit }: AppProps) {
   }, [visibleRows, navItems]);
 
   useKeyboard((key) => {
-    if (state.loading) return;
+    if (state.loading || state.saving) return;
 
     if (key.name === "q") {
       onExit();
@@ -392,7 +430,7 @@ function App({ onExit }: AppProps) {
       <box flexDirection="column">
         <text fg={COLORS.accent}>{displayLogo}</text>
         <text> </text>
-        <text fg={COLORS.muted}>◈ Loading extensions...</text>
+        <text fg={COLORS.muted}>{loadingIndicator} Loading extensions...</text>
       </box>
     );
   }
@@ -512,14 +550,15 @@ function App({ onExit }: AppProps) {
         <text fg={COLORS.dim}>q</text>
         <text fg={COLORS.muted}>quit</text>
       </box>
-      {state.saved && <text fg={COLORS.success}>✓ Configuration saved</text>}
+      {state.saving && <text fg={COLORS.muted}>{loadingIndicator} Saving...</text>}
+      {state.saved && !state.saving && <text fg={COLORS.success}>✓ Configuration saved</text>}
     </box>
   );
 }
 
 let renderer: CliRenderer | null = null;
 
-export async function launchTUI(): Promise<void> {
+export async function launchTUI(options?: { onReady?: () => void }): Promise<void> {
   renderer = await createCliRenderer({
     exitOnCtrlC: true,
     useAlternateScreen: true,
@@ -536,6 +575,7 @@ export async function launchTUI(): Promise<void> {
     };
 
     root.render(<App onExit={handleExit} />);
+    options?.onReady?.();
     renderer!.start();
   });
 }

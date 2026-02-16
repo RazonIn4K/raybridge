@@ -180,32 +180,30 @@ raybridge help              # Show help
 The TUI allows you to:
 - Toggle extensions on/off
 - Expand extensions to toggle individual tools
-- Switch between blocklist mode (all enabled by default) and allowlist mode
 - Save configuration to `~/.config/raybridge/tools.json`
 
 ## Configuration
 
 ### Tools configuration
 
-Control which extensions and tools are exposed via `~/.config/raybridge/tools.json`:
+Control which extensions and tools are exposed via `~/.config/raybridge/tools.json`. The config uses blocklist semantics: everything is enabled by default; you only list what to disable.
 
 ```json
 {
-  "mode": "blocklist",
   "extensions": {
     "extension-name": {
       "enabled": false
     },
     "another-extension": {
       "enabled": true,
-      "tools": ["specific-tool-1", "specific-tool-2"]
+      "disabledTools": ["tool-to-hide"]
     }
   }
 }
 ```
 
-- **blocklist mode** (default): All extensions enabled unless explicitly disabled
-- **allowlist mode**: All extensions disabled unless explicitly enabled
+- Extensions: enabled by default; set `"enabled": false` to disable
+- Tools: all tools enabled by default; list names in `disabledTools` to hide specific tools
 
 ### Extension preferences
 
@@ -234,7 +232,7 @@ src/
 ├── http-server.ts # HTTP transport with session management
 ├── cli.ts         # CLI entry point (config, list, help commands)
 ├── tui.tsx        # Interactive TUI for extension configuration
-├── config.ts      # Tools configuration (blocklist/allowlist)
+├── config.ts      # Tools configuration (blocklist-only)
 ├── discovery.ts   # Scans Raycast's extensions directory for tool definitions
 ├── loader.ts      # Executes local tools with Raycast API shims
 ├── shims.ts       # Fake @raycast/api, react, react/jsx-runtime modules

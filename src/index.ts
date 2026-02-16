@@ -11,7 +11,12 @@ import { discoverExtensions, type ExtensionEntry } from "./discovery.js";
 import { executeTool } from "./loader.js";
 import { setPreferences, setRaycastTokens } from "./shims.js";
 import { loadRaycastAuthData } from "./auth.js";
-import { loadToolsConfig, filterExtensions } from "./config.js";
+import {
+  loadToolsConfig,
+  saveToolsConfig,
+  filterExtensions,
+  normalizeLegacyConfig,
+} from "./config.js";
 import { startExtensionWatcher } from "./watcher.js";
 import { redactSecrets } from "./redact.js";
 
@@ -234,11 +239,17 @@ function parseArgs(): { http: boolean; port: number; host: string } {
 }
 
 export async function loadServerContext(): Promise<ServerContext> {
-  const [localExtensions, manualPrefs, toolsConfig] = await Promise.all([
+  const [localExtensions, manualPrefs, rawToolsConfig] = await Promise.all([
     discoverExtensions(),
     loadPreferences(),
     loadToolsConfig(),
   ]);
+
+  const { config: toolsConfig, didMigrate } = normalizeLegacyConfig(rawToolsConfig, localExtensions);
+  if (didMigrate) {
+    await saveToolsConfig(toolsConfig);
+    console.error("raybridge: Migrated config to blocklist-only format");
+  }
 
   // Load Raycast auth data once (tokens + prefs), then merge with manual prefs.
   let auth = { tokens: new Map(), prefs: {} as Record<string, Record<string, unknown>> };
@@ -284,11 +295,17 @@ export async function loadServerContext(): Promise<ServerContext> {
  * Returns true if tools changed.
  */
 export async function reloadServerContext(ctx: ServerContext): Promise<boolean> {
-  const [localExtensions, manualPrefs, toolsConfig] = await Promise.all([
+  const [localExtensions, manualPrefs, rawToolsConfig] = await Promise.all([
     discoverExtensions(),
     loadPreferences(),
     loadToolsConfig(),
   ]);
+
+  const { config: toolsConfig, didMigrate } = normalizeLegacyConfig(rawToolsConfig, localExtensions);
+  if (didMigrate) {
+    await saveToolsConfig(toolsConfig);
+    console.error("raybridge: Migrated config to blocklist-only format");
+  }
 
   let auth = { tokens: new Map(), prefs: {} as Record<string, Record<string, unknown>> };
   try {

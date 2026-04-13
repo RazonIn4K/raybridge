@@ -1,7 +1,7 @@
 {
   "name": "raybridge",
   "version": "1.0.0",
-  "description": "MCP server exposing Raycast extension tools to Claude Code",
+  "description": "MCP server exposing Raycast extension tools to MCP clients",
   "type": "module",
   "main": "src/index.ts",
   "bin": {
@@ -34,11 +34,11 @@
   "author": "Justin Lokos",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jlokos/raybridge.git"
+    "url": "git+https://github.com/RazonIn4K/raybridge.git"
   },
-  "homepage": "https://github.com/jlokos/raybridge#readme",
+  "homepage": "https://github.com/RazonIn4K/raybridge#readme",
   "bugs": {
-    "url": "https://github.com/jlokos/raybridge/issues"
+    "url": "https://github.com/RazonIn4K/raybridge/issues"
   },
   "keywords": ["mcp", "raycast", "claude", "claude-code", "model-context-protocol"]
 }

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "raybridge": {
+      "command": "/opt/homebrew/bin/bun",
+      "args": ["run", "/ABSOLUTE/PATH/TO/raybridge/src/index.ts"],
+      "env": {
+        "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+      }
+    }
+  }
+}

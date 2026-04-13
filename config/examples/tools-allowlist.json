@@ -1,0 +1,132 @@
+{
+  "_comment": "Generated from verify.sh — 22 extensions discovered, 130+ tools. This allowlist enables a curated subset. Edit as needed.",
+  "mode": "allowlist",
+  "extensions": {
+    "github": {
+      "enabled": true,
+      "tools": [
+        "get-notifications",
+        "search-issues",
+        "search-pull-requests",
+        "search-repositories",
+        "merge-pull-request",
+        "close-issue",
+        "reopen-issue",
+        "list-workflow-runs",
+        "run-workflow"
+      ]
+    },
+    "github-copilot": {
+      "enabled": true,
+      "tools": ["create-task", "search-repositories"]
+    },
+    "google-calendar": {
+      "enabled": true,
+      "tools": [
+        "create-event",
+        "search-events",
+        "check-availability",
+        "edit-event",
+        "get-current-time",
+        "list-calendars"
+      ]
+    },
+    "google-workspace": {
+      "enabled": true,
+      "tools": ["search-files", "create-document"]
+    },
+    "slack": {
+      "enabled": true,
+      "tools": [
+        "get-channels",
+        "get-channel-history",
+        "get-users",
+        "set-status",
+        "search-messages"
+      ]
+    },
+    "obsidian": {
+      "enabled": true,
+      "tools": [
+        "getVaults",
+        "searchNote",
+        "createNote",
+        "readNote",
+        "appendNote",
+        "updateNote"
+      ]
+    },
+    "apple-notes": {
+      "enabled": true,
+      "tools": ["create-note", "search-notes", "get-note-content", "update-note"]
+    },
+    "apple-reminders": {
+      "enabled": true,
+      "tools": ["create-reminder", "get-lists", "get-reminders", "update-reminder"]
+    },
+    "kill-process": {
+      "enabled": true,
+      "tools": ["list-processes", "kill-process"]
+    },
+    "arc": {
+      "enabled": true,
+      "tools": [
+        "new-tab",
+        "get-tabs",
+        "select-tab",
+        "get-spaces",
+        "search-history"
+      ]
+    },
+    "downloads-manager": {
+      "enabled": true,
+      "tools": ["get-latest-download", "open-latest-download", "show-latest-download"]
+    },
+    "ccusage": {
+      "enabled": true,
+      "tools": [
+        "get-daily-usage",
+        "get-total-usage",
+        "get-monthly-usage",
+        "get-usage-limits"
+      ]
+    },
+    "video-downloader": {
+      "enabled": true,
+      "tools": ["download-video", "extract-transcript"]
+    },
+    "base64": {
+      "enabled": true,
+      "tools": ["base64-encode", "base64-decode"]
+    },
+    "music": {
+      "enabled": false,
+      "_note": "Available but disabled by default — enable if you want AI to control Apple Music"
+    },
+    "xcode": {
+      "enabled": false,
+      "_note": "Available but disabled by default — enable for iOS/macOS development workflows"
+    },
+    "sips": {
+      "enabled": false,
+      "_note": "Available but disabled by default — image manipulation tools"
+    },
+    "media-converter": {
+      "enabled": false,
+      "_note": "Available but disabled by default — file conversion"
+    },
+    "svgl": {
+      "enabled": false
+    },
+    "timers": {
+      "enabled": false
+    },
+    "pomodoro": {
+      "enabled": false
+    },
+    "mcp": {
+      "enabled": false,
+      "_note": "Meta MCP tool — enable only if you need AI to invoke other MCP servers through Raycast"
+    }
+  }
+}

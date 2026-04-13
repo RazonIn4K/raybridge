@@ -1,0 +1,13 @@
+# Add this to ~/.codex/config.toml
+
+[mcp_servers.raybridge]
+command = "/opt/homebrew/bin/bun"
+args = ["run", "/ABSOLUTE/PATH/TO/raybridge/src/index.ts"]
+startup_timeout_sec = 20
+tool_timeout_sec = 120
+
+[mcp_servers.raybridge.env]
+PATH = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+
+# Optional: restrict which tools Codex may use
+# enabled_tools = ["github", "obsidian", "slack"]

@@ -309,12 +309,3 @@ macOS may be waiting on Keychain access to Raycast's `database_key`. Approve the
 ## License
 
 MIT
-
-Tool descriptions include per-tool documentation, parameter details, and any extension-wide AI instructions from the extension's `ai.instructions` field.
-
-## Limitations
-
-- **No interactive UI** — extensions that depend on rendering Lists, Forms, or other visual components to the user won't behave meaningfully
-- **No persistent LocalStorage** — shimmed as no-op; extensions relying on it lose state between calls
-- **OAuth tokens are not refreshed** — expired tokens will cause failures until Raycast refreshes them
-- **macOS only** — depends on macOS Keychain and Raycast's macOS app paths

@@ -499,6 +499,12 @@ def normalize_apify_result(
         if value
     ).lower()
     headers = _extract_headers(result)
+    security_txt_present = _get_nested(
+        result,
+        "securityTxtPresent",
+        "security_txt_present",
+        "securityTxt.present",
+    )
     generic_only = any(
         (
             result.get("pageTitle"),
@@ -508,13 +514,14 @@ def normalize_apify_result(
         )
     ) and not any(
         (
+            status_code is not None,
             result.get("html"),
             result.get("text"),
             result.get("markdown"),
             _get_nested(result, "content.html"),
             _get_nested(result, "content.text"),
             headers,
-            _get_nested(result, "securityTxtPresent", "security_txt_present", "securityTxt.present"),
+            security_txt_present is not None,
         )
     )
     if generic_only:
@@ -547,12 +554,6 @@ def normalize_apify_result(
     if page_title:
         finding.add_evidence(f"Observed page title: {page_title}")
 
-    security_txt_present = _get_nested(
-        result,
-        "securityTxtPresent",
-        "security_txt_present",
-        "securityTxt.present",
-    )
     if security_txt_present is False:
         finding.raise_severity("low")
         finding.add_evidence("No security.txt file was reported for this site.")

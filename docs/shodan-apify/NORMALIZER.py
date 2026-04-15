@@ -117,8 +117,14 @@ def _best_asset(record: dict[str, Any], fallback: str) -> str:
         record.get("ip_str"),
         record.get("ip"),
         record.get("url"),
+        _get_nested(record, "metadata.redirectedUrl"),
+        _get_nested(record, "metadata.url"),
+        _get_nested(record, "metadata.sourceUrl"),
+        record.get("query"),
         _get_nested(record, "request.url"),
         _get_nested(record, "crawl.url"),
+        _get_nested(record, "crawl.loadedUrl"),
+        _get_nested(record, "crawl.request.url"),
     ):
         if candidate:
             return str(candidate)
@@ -126,7 +132,14 @@ def _best_asset(record: dict[str, Any], fallback: str) -> str:
 
 
 def _extract_headers(record: dict[str, Any]) -> dict[str, str]:
-    headers = _get_nested(record, "headers") or _get_nested(record, "crawl.headers") or {}
+    headers = (
+        _get_nested(record, "headers")
+        or _get_nested(record, "crawl.headers")
+        or _get_nested(record, "crawl.responseHeaders")
+        or _get_nested(record, "response.headers")
+        or _get_nested(record, "metadata.headers")
+        or {}
+    )
     if isinstance(headers, dict):
         return {str(k).lower(): str(v) for k, v in headers.items()}
     return {}
@@ -234,7 +247,15 @@ def normalize_apify_result(result: dict[str, Any]) -> list[dict[str, Any]]:
     url = _best_asset(result, "unknown-url")
     parsed = urlparse(url)
     scheme = parsed.scheme.lower()
-    status_code = _get_nested(result, "statusCode", "crawl.statusCode", "response.status")
+    status_code = _get_nested(
+        result,
+        "statusCode",
+        "crawl.statusCode",
+        "crawl.httpStatusCode",
+        "response.status",
+        "response.statusCode",
+        "metadata.statusCode",
+    )
     try:
         status_code = int(status_code) if status_code is not None else None
     except (TypeError, ValueError):
@@ -245,8 +266,11 @@ def normalize_apify_result(result: dict[str, Any]) -> list[dict[str, Any]]:
         for value in (
             result.get("html"),
             result.get("text"),
+            result.get("markdown"),
             _get_nested(result, "content.html"),
             _get_nested(result, "content.text"),
+            _get_nested(result, "metadata.title"),
+            _get_nested(result, "metadata.description"),
         )
         if value
     ).lower()
@@ -289,7 +313,7 @@ def normalize_apify_result(result: dict[str, Any]) -> list[dict[str, Any]]:
         finding.add_indicators("missing-security.txt")
 
     missing_headers = [header for header in SECURITY_HEADERS if header not in headers]
-    if missing_headers:
+    if headers and missing_headers:
         finding.raise_severity("low")
         finding.add_evidence(
             "Missing security headers: " + ", ".join(missing_headers)

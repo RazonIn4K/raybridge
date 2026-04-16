@@ -2,10 +2,10 @@
 
 These prompts assume raw Shodan and Apify data has already been normalized first.
 
-Use [`NORMALIZER.py`](/Users/davidortiz/raybridge/docs/shodan-apify/NORMALIZER.py) like this:
+From the repo root, use [`NORMALIZER.py`](./NORMALIZER.py) like this:
 
 ```bash
-python3 /Users/davidortiz/raybridge/docs/shodan-apify/NORMALIZER.py --batch findings.json --zen-prompt
+python3 docs/shodan-apify/NORMALIZER.py --batch findings.json --zen-prompt
 ```
 
 ## 1. Triage

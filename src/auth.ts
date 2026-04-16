@@ -51,13 +51,6 @@ function getDatabasePassphrase(): string {
  */
 function resolveSqlcipherPath(): string {
   for (const candidate of SQLCIPHER_CANDIDATES) {
-    if (candidate.includes("/")) {
-      if (existsSync(candidate)) {
-        return candidate;
-      }
-      continue;
-    }
-
     try {
       execFileSync(candidate, ["--version"], {
         encoding: "utf-8",
@@ -75,6 +68,7 @@ function resolveSqlcipherPath(): string {
 }
 
 function queryDB(passphrase: string, sql: string, retries = 3): any[] {
+  const sqlcipherPath = resolveSqlcipherPath();
   const dbDir = join(
     homedir(),
     "Library",
@@ -112,7 +106,7 @@ function queryDB(passphrase: string, sql: string, retries = 3): any[] {
       }
 
       const input = `PRAGMA key = '${passphrase}';\n.mode json\n${sql}`;
-      const result = execFileSync(resolveSqlcipherPath(), [tmpDb], {
+      const result = execFileSync(sqlcipherPath, [tmpDb], {
         input,
         encoding: "utf-8",
         maxBuffer: 10 * 1024 * 1024,

@@ -30,7 +30,9 @@ SECURITY_HEADERS = (
     "x-content-type-options",
     "referrer-policy",
 )
-PROMPT_ROLE_RE = re.compile(r"\b(system|human|assistant)\s*:", re.IGNORECASE)
+PROMPT_ROLE_RE = re.compile(
+    r"(?im)^(\s*)(system|developer|user|human|assistant|tool|function)\s*:"
+)
 
 
 @dataclass
@@ -246,7 +248,12 @@ def _domain_matches_scope(domain: str, scoped_domains: set[str]) -> bool:
 
 
 def resolve_ownership(asset: str, record: dict[str, Any], inventory: dict[str, Any] | None = None) -> str:
-    prepared = inventory if inventory is not None else _prepare_inventory({})
+    if inventory is None:
+        prepared = _prepare_inventory({})
+    elif "owned_networks" in inventory and "monitored_networks" in inventory:
+        prepared = inventory
+    else:
+        prepared = _prepare_inventory(inventory)
 
     for ip_value in _ip_candidates(record, asset):
         if any(ip_value in network for network in prepared["owned_networks"]):
@@ -265,7 +272,7 @@ def resolve_ownership(asset: str, record: dict[str, Any], inventory: dict[str, A
 
 def _sanitize_prompt_text(value: Any) -> str:
     text = str(value).replace("\r\n", "\n").replace("\r", "\n")
-    text = PROMPT_ROLE_RE.sub("quoted-role:", text)
+    text = PROMPT_ROLE_RE.sub(r"\1quoted-role:", text)
     text = text.translate(str.maketrans({"<": "[", ">": "]", "{": "(", "}": ")"}))
     lines: list[str] = []
     for line in text.split("\n"):

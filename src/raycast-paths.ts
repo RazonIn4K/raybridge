@@ -1,6 +1,6 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync, type Dirent } from "node:fs";
 
 function envPath(name: string): string | null {
   const v = process.env[name];
@@ -21,7 +21,7 @@ export function getRaycastDataDir(): string {
       try {
         if (!existsSync(dir)) return false;
         const entries = readdirSync(dir);
-        return entries.some((n) => /\.(db|sqlite|sqlite3)$/i.test(n) && !/-wal$|-shm$/i.test(n));
+        return entries.some((n) => /\.(db|sqlite|sqlite3)$/i.test(n));
       } catch {
         return false;
       }
@@ -33,9 +33,9 @@ export function getRaycastDataDir(): string {
     // Microsoft Store/AppX installs often store app data under %LOCALAPPDATA%\\Packages\\<family>\\...
     const packagesRoot = join(localAppDataBase, "Packages");
     try {
-      const dirs = readdirSync(packagesRoot, { withFileTypes: true } as any)
-        .filter((d: any) => d?.isDirectory?.())
-        .map((d: any) => d.name as string)
+      const dirs = readdirSync(packagesRoot, { withFileTypes: true })
+        .filter((d): d is Dirent => d.isDirectory())
+        .map((d) => d.name)
         .filter((name) => name.toLowerCase().startsWith("raycast.raycast"));
 
       for (const name of dirs) {
@@ -77,7 +77,7 @@ export function getRaycastExtensionsDir(): string {
     const hasAnyExtension = (dir: string): boolean => {
       try {
         if (!existsSync(dir)) return false;
-        const entries = readdirSync(dir, { withFileTypes: true } as any);
+        const entries = readdirSync(dir, { withFileTypes: true });
         for (const ent of entries) {
           if (!ent?.isDirectory?.()) continue;
           const pkg = join(dir, ent.name, "package.json");

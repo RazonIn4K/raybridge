@@ -175,7 +175,7 @@ export function createMcpServer(ctx: ServerContext): Server {
     }
 
     const tool = entry.ext.tools[entry.toolIndex];
-    const inputSummary = redactSecrets(JSON.stringify(args.input || {}).slice(0, 200));
+    const inputSummary = redactSecrets(JSON.stringify(args.input || {})).slice(0, 200);
     const startTime = Date.now();
 
     console.error(`raybridge: [CALL] ${extName}/${args.tool_name} input=${inputSummary}`);

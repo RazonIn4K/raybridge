@@ -9,6 +9,12 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 RAYBRIDGE_DIR="${RAYBRIDGE_DIR:-$REPO_ROOT}"
 DRY_RUN=false
 
+log()  { printf '\033[1;34m[kit]\033[0m %s\n' "$*"; }
+ok()   { printf '\033[1;32m[ok]\033[0m  %s\n' "$*"; }
+warn() { printf '\033[1;33m[!!]\033[0m  %s\n' "$*"; }
+err()  { printf '\033[1;31m[err]\033[0m %s\n' "$*" >&2; }
+run()  { if $DRY_RUN; then log "DRY RUN: $*"; else "$@"; fi; }
+
 for arg in "$@"; do
   case "$arg" in
     --dry-run) DRY_RUN=true ;;
@@ -18,12 +24,6 @@ for arg in "$@"; do
       ;;
   esac
 done
-
-log()  { printf '\033[1;34m[kit]\033[0m %s\n' "$*"; }
-ok()   { printf '\033[1;32m[ok]\033[0m  %s\n' "$*"; }
-warn() { printf '\033[1;33m[!!]\033[0m  %s\n' "$*"; }
-err()  { printf '\033[1;31m[err]\033[0m %s\n' "$*" >&2; }
-run()  { if $DRY_RUN; then log "DRY RUN: $*"; else "$@"; fi; }
 
 # ── Preflight checks ──────────────────────────────────────────────
 if [[ "${OSTYPE:-}" != darwin* ]]; then

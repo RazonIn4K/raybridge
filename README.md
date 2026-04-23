@@ -18,7 +18,7 @@ That means you do not need a separate starter-kit repository or a second clone j
 
 RayBridge discovers Raycast Store extensions that define AI tools in their `package.json` `tools` array. That includes extensions for services like GitHub, Linear, Jira, Notion, Slack, and other API-backed workflows.
 
-RayBridge does not expose Raycast's built-in native features like clipboard history, calculator, app launcher, or file search, because those are not packaged as extensions with MCP-style tool definitions.
+RayBridge does not enumerate Raycast's built-in native features like clipboard history, calculator, app launcher, or file search, because those are not packaged as extensions with MCP-style tool definitions. Some Raycast extension APIs such as clipboard access, `open`, and Finder reveal are available through optional shims for extension tools that need them.
 
 To discover which installed extensions are compatible, see [docs/finding-extensions.md](docs/finding-extensions.md).
 
@@ -26,7 +26,9 @@ To discover which installed extensions are compatible, see [docs/finding-extensi
 
 1. Scan `~/.config/raycast/extensions/` for installed extensions with `tools` definitions
 2. Load OAuth tokens from Raycast's encrypted SQLite database
-3. Register each extension as an MCP tool available over stdio or HTTP
+3. Add compact Raycast eval examples from extension manifests to help MCP clients pick the right tool
+4. Register each extension as an MCP tool available over stdio or HTTP
+5. Execute Raycast extension tools in a short-lived Bun worker process by default
 
 Extensions that use Raycast UI APIs (`List`, `Detail`, `Form`, and similar) are supported through shims. Extensions whose tools perform background work like API calls, lookups, and transformations work best.
 
@@ -56,7 +58,7 @@ On first launch, macOS may ask your terminal app for access to Raycast's Keychai
 cp config/examples/tools-allowlist.json ~/.config/raybridge/tools.json
 ```
 
-Edit `~/.config/raybridge/tools.json` to enable only the extensions you want exposed.
+Edit `~/.config/raybridge/tools.json` to enable only the extensions you want exposed. If this file is missing, RayBridge now falls back to an empty allowlist rather than exposing every installed AI extension.
 
 To discover your installed extension and tool names:
 
@@ -163,6 +165,16 @@ Authorization: Bearer your-secret-key
 
 Sessions expire after 30 minutes of inactivity.
 
+## Tool Execution Isolation
+
+Raycast extension code runs in a fresh Bun worker process for each tool call. This keeps extension module state, shim mutations, uncaught crashes, and most memory leaks out of the long-running MCP server process.
+
+Controls:
+
+- `RAYBRIDGE_TOOL_TIMEOUT_MS=120000` sets the worker timeout in milliseconds
+- `RAYBRIDGE_IN_PROCESS=true` disables worker isolation for local debugging
+- `MCP_MAX_BODY_SIZE=1mb` sets the maximum JSON request body accepted by `/mcp`
+
 ## CLI
 
 RayBridge includes a CLI and TUI for controlling which extensions and tools are exposed:
@@ -178,6 +190,19 @@ raybridge help
 
 The TUI lets you toggle extensions and individual tools, switch between allowlist and blocklist mode, and save to `~/.config/raybridge/tools.json`.
 
+## Built-In Catalog Tool
+
+RayBridge registers a built-in MCP tool named `raybridge` alongside your Raycast extension tools. Use it when an MCP client needs to inspect what Raycast can do before choosing a tool:
+
+- `action: "summary"` reports installed AI-tool extensions, command-only extensions, enabled tools, and eval coverage
+- `action: "search"` searches extension, tool, and command names/descriptions
+- `action: "detail"` shows one extension's enabled tools, command-only entries, and eval count
+- `action: "config"` shows the active allowlist mode, configured extensions, and `raycastApi` shim gates
+- `action: "doctor"` checks stale config entries, missing tool files, risky enabled tools, and active shim gates
+- `action: "recommend"` suggests low-risk disabled tools to consider and high-risk tools to leave disabled unless needed
+
+Command-only entries are informational. They are not directly callable as structured MCP tools unless the Raycast extension adds AI tools.
+
 ## Configuration
 
 ### Tools configuration
@@ -186,7 +211,15 @@ Control which extensions and tools are exposed via `~/.config/raybridge/tools.js
 
 ```json
 {
-  "mode": "blocklist",
+  "mode": "allowlist",
+  "raycastApi": {
+    "enableLocalStorage": true,
+    "enableClipboard": false,
+    "enableSystemActions": false,
+    "enableDestructiveSystemActions": false,
+    "enableAppleScript": false,
+    "enableCommandLaunch": false
+  },
   "extensions": {
     "extension-name": {
       "enabled": false
@@ -199,8 +232,14 @@ Control which extensions and tools are exposed via `~/.config/raybridge/tools.js
 }
 ```
 
-- `blocklist` mode: all extensions are enabled unless disabled
 - `allowlist` mode: all extensions are disabled unless enabled
+- `blocklist` mode: all extensions are enabled unless disabled
+- `raycastApi.enableLocalStorage`: persist `LocalStorage` values per extension under `~/.config/raybridge/local-storage/`
+- `raycastApi.enableClipboard`: allow Raycast extension tools to use macOS `pbcopy` and `pbpaste`
+- `raycastApi.enableSystemActions`: allow `open` and `showInFinder`
+- `raycastApi.enableDestructiveSystemActions`: allow `trash`; keep this off unless a tool explicitly needs it
+- `raycastApi.enableAppleScript`: allow selected-text, selected-Finder-item, frontmost-app, paste, and `runAppleScript` shims
+- `raycastApi.enableCommandLaunch`: allow extension tools to launch Raycast commands via Raycast deep links
 
 ### Extension preferences
 
@@ -229,6 +268,12 @@ The included helper script is useful for local testing:
 
 ```bash
 python3 scripts/call-raybridge.py list
+
+python3 scripts/call-raybridge.py catalog --action search --query calendar
+
+python3 scripts/call-raybridge.py catalog --action doctor
+
+python3 scripts/call-raybridge.py catalog --action recommend --limit 10
 
 python3 scripts/call-raybridge.py call \
   --mcp-tool your-extension \

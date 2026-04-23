@@ -10,8 +10,8 @@ interface WorkerRequest {
   input: Record<string, unknown>;
   extensionName: string;
   extensionDir: string;
-  preferences: Record<string, Record<string, unknown>>;
-  raycastTokens: Array<[string, TokenSet[]]>;
+  preferences?: Record<string, Record<string, unknown>>;
+  raycastTokens?: Array<[string, TokenSet[]]>;
   shimConfig?: RaycastApiConfig;
 }
 
@@ -51,12 +51,14 @@ async function main() {
       request.extensionDir
     );
     writeResponse({ ok: true, result });
-  } catch (err: any) {
-    writeResponse({ ok: false, error: err?.message || String(err) });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    writeResponse({ ok: false, error: message });
   }
 }
 
-main().catch((err: any) => {
-  writeResponse({ ok: false, error: err?.message || String(err) });
+main().catch((err: unknown) => {
+  const message = err instanceof Error ? err.message : String(err);
+  writeResponse({ ok: false, error: message });
   process.exitCode = 1;
 });

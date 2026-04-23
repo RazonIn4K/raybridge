@@ -103,12 +103,26 @@ export async function executeToolInWorker(
 
     child.on("close", (code) => {
       if (settled) return;
-      settled = true;
       clearTimeout(timeout);
 
       const out = Buffer.concat(stdout).toString("utf-8");
       const err = Buffer.concat(stderr).toString("utf-8");
-      const response = parseWorkerResponse(out);
+      let response: WorkerResponse | undefined;
+      try {
+        response = parseWorkerResponse(out);
+      } catch (parseErr) {
+        settled = true;
+        reject(
+          new Error(
+            `Tool worker returned an invalid result (code ${code}). parseError=${preview(
+              String(parseErr)
+            )} stdout=${preview(out)} stderr=${preview(err)}`
+          )
+        );
+        return;
+      }
+
+      settled = true;
 
       if (!response) {
         reject(

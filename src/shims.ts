@@ -31,7 +31,6 @@ function envFlag(name: string): boolean | undefined {
 export function setShimConfig(config: RaycastApiConfig = {}) {
   shimConfig = {
     ...DEFAULT_SHIM_CONFIG,
-    ...config,
     enableLocalStorage:
       envFlag("RAYBRIDGE_ENABLE_LOCAL_STORAGE") ??
       config.enableLocalStorage ??

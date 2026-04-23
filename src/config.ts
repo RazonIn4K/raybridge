@@ -135,7 +135,22 @@ export async function loadToolsConfig(): Promise<ToolsConfig> {
 
 export async function saveToolsConfig(config: ToolsConfig): Promise<void> {
   await mkdir(dirname(CONFIG_PATH), { recursive: true });
-  await writeFile(CONFIG_PATH, JSON.stringify(normalizeToolsConfig(config), null, 2) + "\n");
+  let existing: Record<string, unknown> = {};
+  try {
+    const parsed = JSON.parse(await readFile(CONFIG_PATH, "utf-8"));
+    if (isRecord(parsed)) existing = parsed;
+  } catch {
+    existing = {};
+  }
+
+  const knownKeys = new Set(["_comment", "mode", "raycastApi", "extensions"]);
+  const preserved = Object.fromEntries(
+    Object.entries(existing).filter(([key]) => !knownKeys.has(key))
+  );
+  await writeFile(
+    CONFIG_PATH,
+    JSON.stringify({ ...preserved, ...normalizeToolsConfig(config) }, null, 2) + "\n"
+  );
 }
 
 export function filterExtensions(

@@ -9,8 +9,8 @@ RAYBRIDGE_HOME="${RAYBRIDGE_HOME:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 MCP_HOST="${MCP_HOST:-127.0.0.1}"
 MCP_PORT="${MCP_PORT:-3000}"
 
-if [[ ! -d "$RAYBRIDGE_HOME" ]]; then
-  echo "RayBridge not found at $RAYBRIDGE_HOME" >&2
+if [[ ! -d "$RAYBRIDGE_HOME" || ! -f "$RAYBRIDGE_HOME/package.json" || ! -f "$RAYBRIDGE_HOME/src/index.ts" ]]; then
+  echo "RayBridge checkout not found at $RAYBRIDGE_HOME" >&2
   echo "Run: bash scripts/install.sh" >&2
   exit 1
 fi

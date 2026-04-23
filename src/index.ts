@@ -7,6 +7,7 @@ import {
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { homedir } from "node:os";
+import { pathToFileURL } from "node:url";
 import { discoverExtensions, type ExtensionEntry } from "./discovery.js";
 import { executeTool } from "./loader.js";
 import { executeToolInWorker } from "./worker-executor.js";
@@ -126,6 +127,13 @@ export function buildToolDefs(extensions: ExtensionEntry[]): {
   const lookup = new Map<string, { ext: ExtensionEntry; toolIndex: number }>();
 
   for (const ext of extensions) {
+    if (ext.extensionName === RAYBRIDGE_TOOL_NAME) {
+      console.error(
+        `raybridge: Skipping extension named "${RAYBRIDGE_TOOL_NAME}" because it conflicts with the built-in catalog tool`
+      );
+      continue;
+    }
+
     // Build tool catalog with full instructions
     const toolCatalog = ext.tools
       .map((t) => {
@@ -490,7 +498,13 @@ async function main() {
   }
 }
 
-if (import.meta.main) {
+function isMainModule(): boolean {
+  const meta = import.meta as ImportMeta & { main?: boolean };
+  if (meta.main) return true;
+  return Boolean(process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href);
+}
+
+if (isMainModule()) {
   main().catch((err) => {
     console.error("Fatal:", err);
     process.exit(1);

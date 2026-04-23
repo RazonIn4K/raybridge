@@ -82,6 +82,8 @@ def post_json(
         if not events:
             raise RuntimeError(f"Could not parse SSE response: {body}")
         parsed = events[-1]
+    elif not body.strip():
+        parsed = {}
     else:
         try:
             parsed = json.loads(body)
@@ -122,6 +124,12 @@ def initialize(url: str, api_key: Optional[str]) -> str:
         raise RuntimeError(f"Initialize failed: {json.dumps(response, indent=2)}")
     if not session_id:
         raise RuntimeError("Initialize succeeded but no mcp-session-id header was returned.")
+    initialized = {
+        "jsonrpc": "2.0",
+        "method": "notifications/initialized",
+        "params": {},
+    }
+    post_json(url, initialized, api_key=api_key, session_id=session_id)
     return session_id
 
 
@@ -208,6 +216,7 @@ def main() -> int:
 
     args = parser.parse_args()
 
+    session_id = None
     try:
         session_id = initialize(args.url, args.api_key)
         if args.command == "list":
@@ -251,10 +260,7 @@ def main() -> int:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
     finally:
-        try:
-            delete_session(args.url, args.api_key, locals().get("session_id"))
-        except Exception:
-            pass
+        delete_session(args.url, args.api_key, session_id)
 
 
 if __name__ == "__main__":

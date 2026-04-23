@@ -292,8 +292,13 @@ raybridge/
 │   ├── tui.tsx
 │   ├── config.ts
 │   ├── discovery.ts
+│   ├── catalog.ts
+│   ├── evals.ts
 │   ├── loader.ts
+│   ├── logging.ts
 │   ├── shims.ts
+│   ├── tool-worker.ts
+│   ├── worker-executor.ts
 │   ├── auth.ts
 │   └── watcher.ts
 ├── scripts/

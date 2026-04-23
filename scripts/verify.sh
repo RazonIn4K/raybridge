@@ -22,9 +22,16 @@ echo "────────────────────────�
 
 check "bun installed"           command -v bun
 check "sqlcipher installed"     command -v sqlcipher
-check "cloudflared installed"   command -v cloudflared
+if [[ "${RAYBRIDGE_CHECK_CLOUDFLARED:-0}" == "1" ]]; then
+  check "cloudflared installed" command -v cloudflared
+elif command -v cloudflared &>/dev/null; then
+  printf '\033[1;32m✓\033[0m cloudflared installed (optional)\n'
+  PASS=$((PASS + 1))
+else
+  printf '\033[1;33m-\033[0m cloudflared not installed (optional; set RAYBRIDGE_CHECK_CLOUDFLARED=1 to require it)\n'
+fi
 check "RayBridge repo present"  test -d "$RAYBRIDGE_HOME/src"
-check "bun_modules present"     test -d "$RAYBRIDGE_HOME/node_modules"
+check "node_modules present"    test -d "$RAYBRIDGE_HOME/node_modules"
 check "tools.json exists"       test -f "$HOME/.config/raybridge/tools.json"
 check "Raycast installed"       test -d "/Applications/Raycast.app"
 
@@ -66,4 +73,10 @@ fi
 
 echo ""
 echo "$PASS passed, $FAIL issues"
-[[ $FAIL -eq 0 ]] && echo "Ready to connect AI clients." || echo "Fix the issues above, then re-run."
+if [[ $FAIL -eq 0 ]]; then
+  echo "Ready to connect AI clients."
+  exit 0
+fi
+
+echo "Fix the issues above, then re-run."
+exit "$FAIL"

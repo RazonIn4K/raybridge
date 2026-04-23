@@ -2,6 +2,17 @@
   "name": "raybridge",
   "version": "1.0.0",
   "description": "MCP server exposing Raycast extension tools to MCP clients",
+  "keywords": [
+    "raycast",
+    "mcp",
+    "codex",
+    "chatgpt",
+    "claude",
+    "claude-desktop",
+    "claude-code",
+    "http-server",
+    "bun"
+  ],
   "type": "module",
   "main": "src/index.ts",
   "bin": {
@@ -47,6 +58,5 @@
   "homepage": "https://github.com/RazonIn4K/raybridge#readme",
   "bugs": {
     "url": "https://github.com/RazonIn4K/raybridge/issues"
-  },
-  "keywords": ["mcp", "raycast", "claude", "claude-code", "model-context-protocol"]
+  }
 }

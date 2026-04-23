@@ -2,7 +2,10 @@ const SENSITIVE_KEY_PATTERN =
   /token|secret|password|authorization|cookie|api[-_]?key|access[-_]?token|refresh[-_]?token|id[-_]?token|personalAccessToken|clientSecret/i;
 
 const SECRET_TEXT_PATTERNS: Array<[RegExp, string]> = [
+  [/((?:authorization)\s*[:=]\s*Bearer\s+)[A-Za-z0-9._~+/=-]+/gi, "$1[REDACTED]"],
   [/(Bearer\s+)[A-Za-z0-9._~+/=-]+/gi, "$1[REDACTED]"],
+  [/((?:authorization)\s*[:=]\s*)(?!Bearer\b)[^&\s;]+/gi, "$1[REDACTED]"],
+  [/((?:cookie)\s*[:=]\s*)[^&\s;]+/gi, "$1[REDACTED]"],
   [/((?:api[-_]?key|access[-_]?token|refresh[-_]?token|id[-_]?token|token|secret|password)=)[^&\s]+/gi, "$1[REDACTED]"],
 ];
 

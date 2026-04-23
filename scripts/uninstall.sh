@@ -16,12 +16,22 @@ echo "  ~/.config/raybridge/"
 echo "  RAYBRIDGE_HOME export from ~/.zshrc or ~/.bashrc"
 echo ""
 read -rp "Continue? [y/N] " confirm
-if [[ "${confirm,,}" != "y" ]]; then
+confirm="$(printf '%s' "$confirm" | tr '[:upper:]' '[:lower:]')"
+if [[ "$confirm" != "y" ]]; then
   echo "Aborted."
   exit 0
 fi
 
+if [[ -z "${RAYBRIDGE_HOME//[[:space:]]/}" || "$RAYBRIDGE_HOME" == "/" || "$RAYBRIDGE_HOME" == "$HOME" || "$RAYBRIDGE_HOME" == "." || "$RAYBRIDGE_HOME" != /* ]]; then
+  warn "Unsafe RAYBRIDGE_HOME value: ${RAYBRIDGE_HOME:-<empty>}"
+  exit 1
+fi
+
 if [[ -d "$RAYBRIDGE_HOME" ]]; then
+  if [[ ! -f "$RAYBRIDGE_HOME/package.json" || ! -d "$RAYBRIDGE_HOME/src" ]]; then
+    warn "Refusing to remove $RAYBRIDGE_HOME because it does not look like a RayBridge checkout."
+    exit 1
+  fi
   log "Removing $RAYBRIDGE_HOME..."
   rm -rf "$RAYBRIDGE_HOME"
 else

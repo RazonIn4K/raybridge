@@ -232,13 +232,23 @@ export async function discoverCatalog(config: ToolsConfig): Promise<CatalogExten
 }
 
 function isLowRiskToolName(name: string): boolean {
-  return /^(get|list|search|find|read|show|extract|base64-|xcode-(projects|swift-package-resolved|simulators|simulator-applications|releases)|get-current-)/.test(name);
+  const lowRiskExceptions = new Set([
+    "xcode-projects",
+    "xcode-swift-package-resolved",
+    "xcode-simulators",
+    "xcode-simulator-applications",
+    "xcode-releases",
+  ]);
+  return (
+    lowRiskExceptions.has(name) ||
+    /^(get|list|search|find|read|show|extract|base64-|get-current-)/.test(name)
+  );
 }
 
 function isHighRiskTool(tool: CatalogTool): boolean {
   return (
     tool.confirmation ||
-    /^(delete|remove|trash|kill|killall|close|reopen|merge|run|rerun|cancel|create|update|edit|set|start|stop|pause|continue|boot|shutdown|restart|clear|open|paste|copy|send|toggle|convert|apply|optimize|resize|pad|flip|crop|launch|add)/.test(tool.name)
+    /^(delete|remove|trash|kill|killall|close|reopen|merge|run|rerun|cancel|create|update|edit|set|start|stop|pause|continue|boot|shutdown|restart|clear|paste|copy|send|toggle|convert|apply|optimize|resize|pad|flip|crop|launch|add)/.test(tool.name)
   );
 }
 
@@ -573,7 +583,10 @@ export async function runRaybridgeCatalogTool(
   const action = args.action ?? "summary";
   const includeDisabled = args.includeDisabled ?? true;
   const includeCommands = args.includeCommands ?? true;
-  const limit = Math.min(Math.max(Number(args.limit ?? 25), 1), 100);
+  const parsedLimit = Number(args.limit ?? 25);
+  const limit = Number.isFinite(parsedLimit)
+    ? Math.min(Math.max(Math.floor(parsedLimit), 1), 100)
+    : 25;
   const catalog = await discoverCatalog(config);
 
   if (action === "config") return formatConfig(config);

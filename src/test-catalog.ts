@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 import { discoverCatalog, runRaybridgeCatalogTool } from "./catalog.js";
-import { loadToolsConfig } from "./config.js";
+import { loadToolsConfig, normalizeToolsConfig } from "./config.js";
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) {
@@ -12,7 +12,10 @@ function assert(condition: unknown, message: string): asserts condition {
 async function main() {
   const config = await loadToolsConfig();
   const catalog = await discoverCatalog(config);
-  assert(catalog.length > 0, "Expected at least one installed Raycast extension");
+  if (catalog.length === 0) {
+    console.log("Skipped: no Raycast extensions discovered");
+    return;
+  }
 
   const summary = await runRaybridgeCatalogTool({ action: "summary" }, config);
   assert(summary.includes("RayBridge Catalog Summary"), "Summary header missing");
@@ -49,12 +52,21 @@ async function main() {
   const recommend = await runRaybridgeCatalogTool({ action: "recommend", limit: 5 }, config);
   assert(recommend.includes("RayBridge Recommendations"), "Recommendations header missing");
   assert(recommend.includes("Low-Risk Candidates"), "Recommendations should list low-risk candidates");
-  if (config.extensions.ccusage?.enabled === false) {
-    assert(
-      !recommend.includes("ccusage/get-"),
-      "Recommendations should respect explicitly disabled extensions"
-    );
-  }
+
+  const disabledConfig = normalizeToolsConfig({
+    mode: "allowlist",
+    extensions: {
+      ccusage: { enabled: false },
+    },
+  });
+  const disabledRecommend = await runRaybridgeCatalogTool(
+    { action: "recommend", limit: 5 },
+    disabledConfig
+  );
+  assert(
+    !disabledRecommend.includes("ccusage/get-"),
+    "Recommendations should respect explicitly disabled extensions"
+  );
 
   console.log("Catalog test passed");
 }

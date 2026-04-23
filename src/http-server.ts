@@ -103,11 +103,6 @@ export async function startHttpServer(options: HttpServerOptions): Promise<void>
   // JSON body parsing (only for MCP endpoint, after optional auth)
   app.use("/mcp", express.json({ limit: getBodyLimit(), strict: true }));
   app.use("/mcp", (err: any, _req: Request, res: Response, next: NextFunction) => {
-    if (!err) {
-      next();
-      return;
-    }
-
     if (err.type === "entity.too.large") {
       res.status(413).json({ error: "MCP request body is too large" });
       return;
@@ -138,8 +133,8 @@ export async function startHttpServer(options: HttpServerOptions): Promise<void>
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: () => randomUUID(),
         onsessioninitialized: async (id: string) => {
-          const server = createMcpServer(ctx);
           transport.onclose = () => cleanupSession(id, "closed");
+          const server = createMcpServer(ctx);
           await server.connect(transport);
           sessions.set(id, {
             transport,

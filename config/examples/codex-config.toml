@@ -1,6 +1,8 @@
 # Add this to ~/.codex/config.toml
 
 [mcp_servers.raybridge]
+# Apple Silicon Homebrew usually installs bun here; Intel Macs may need /usr/local/bin/bun.
+# Run `which bun` if this path does not exist.
 command = "/opt/homebrew/bin/bun"
 args = ["run", "/ABSOLUTE/PATH/TO/raybridge/src/index.ts"]
 startup_timeout_sec = 20

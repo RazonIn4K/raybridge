@@ -38,6 +38,7 @@ function main() {
     mode: "blocklist",
     extensions: {
       arc: {
+        enabled: "true",
         tools: ["get-tabs"],
       },
     },

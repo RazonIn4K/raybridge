@@ -370,7 +370,7 @@ export async function loadServerContext(): Promise<ServerContext> {
 
   const { tools, lookup } = buildToolDefs(extensions);
 
-  const toolCount = extensions.reduce((n, e) => n + e.tools.length, 0);
+  const toolCount = tools.length;
   console.error(
     `raybridge: Registered ${extensions.length} extensions (${toolCount} tools total)`
   );
@@ -440,7 +440,7 @@ export async function reloadServerContext(ctx: ServerContext): Promise<boolean> 
     return false;
   }
 
-  const toolCount = extensions.reduce((n, e) => n + e.tools.length, 0);
+  const toolCount = tools.length;
   console.error(
     `raybridge: Reloaded ${extensions.length} extensions (${toolCount} tools total)`
   );

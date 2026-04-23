@@ -45,7 +45,11 @@ function parseWorkerResponse(stdout: string): WorkerResponse | undefined {
     .find((candidate) => candidate.startsWith(RESULT_PREFIX));
   if (!line) return undefined;
   const encoded = line.slice(RESULT_PREFIX.length);
-  return JSON.parse(Buffer.from(encoded, "base64").toString("utf-8"));
+  try {
+    return JSON.parse(Buffer.from(encoded, "base64").toString("utf-8"));
+  } catch {
+    return undefined;
+  }
 }
 
 function preview(value: string): string {

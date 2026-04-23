@@ -84,8 +84,8 @@
       ]
     },
     "kill-process": {
-      "enabled": true,
-      "tools": ["list-processes", "kill-process"]
+      "enabled": false,
+      "_note": "Available but disabled by default — enabling lets the AI terminate arbitrary processes."
     },
     "arc": {
       "enabled": true,

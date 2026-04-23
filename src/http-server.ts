@@ -133,7 +133,11 @@ export async function startHttpServer(options: HttpServerOptions): Promise<void>
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: () => randomUUID(),
         onsessioninitialized: async (id: string) => {
-          transport.onclose = () => cleanupSession(id, "closed");
+          transport.onclose = () => {
+            void closeSession(id, "closed").catch((error) => {
+              console.error(`raybridge: Failed to close HTTP session ${id}:`, error);
+            });
+          };
           const server = createMcpServer(ctx);
           await server.connect(transport);
           sessions.set(id, {
@@ -171,7 +175,9 @@ export async function startHttpServer(options: HttpServerOptions): Promise<void>
     const now = Date.now();
     for (const [id, session] of sessions) {
       if (now - session.lastActivity > IDLE_TIMEOUT) {
-        void closeSession(id, "expired");
+        void closeSession(id, "expired").catch((error) => {
+          console.error(`raybridge: Failed to clean up expired HTTP session ${id}:`, error);
+        });
       }
     }
   }, 5 * 60 * 1000); // Check every 5 minutes

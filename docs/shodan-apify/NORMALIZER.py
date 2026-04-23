@@ -33,6 +33,8 @@ SECURITY_HEADERS = (
 PROMPT_ROLE_RE = re.compile(
     r"(?im)^(\s*)(system|developer|user|human|assistant|tool|function)\s*:"
 )
+IPNetwork = ipaddress.IPv4Network | ipaddress.IPv6Network
+IPAddress = ipaddress.IPv4Address | ipaddress.IPv6Address
 
 
 @dataclass
@@ -49,7 +51,10 @@ class FindingBuilder:
     raw: dict[str, Any] = field(default_factory=dict)
 
     def raise_severity(self, candidate: str) -> None:
-        if SEVERITY_ORDER[candidate] > SEVERITY_ORDER[self.severity]:
+        candidate_score = SEVERITY_ORDER.get(candidate)
+        if candidate_score is None:
+            return
+        if candidate_score > SEVERITY_ORDER.get(self.severity, -1):
             self.severity = candidate
 
     def add_evidence(self, *items: str) -> None:
@@ -159,8 +164,8 @@ def _extract_headers(record: dict[str, Any]) -> dict[str, str]:
     return {}
 
 
-def _parse_networks(values: Any) -> list[ipaddress._BaseNetwork]:
-    networks: list[ipaddress._BaseNetwork] = []
+def _parse_networks(values: Any) -> list[IPNetwork]:
+    networks: list[IPNetwork] = []
     for value in _coerce_list(values):
         if not value:
             continue
@@ -199,12 +204,22 @@ def _prepare_inventory(payload: dict[str, Any] | None) -> dict[str, Any]:
 def load_inventory(path: Path | None) -> dict[str, Any]:
     if not path:
         return _prepare_inventory({})
-    payload = json.loads(path.read_text(encoding="utf-8"))
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise ValueError(f"Unable to read inventory file {path}: {exc}") from exc
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            f"Invalid inventory JSON in {path}: {exc.msg} "
+            f"(line {exc.lineno}, column {exc.colno})"
+        ) from exc
     return _prepare_inventory(payload)
 
 
-def _ip_candidates(record: dict[str, Any], asset: str) -> list[ipaddress._BaseAddress]:
-    candidates: list[ipaddress._BaseAddress] = []
+def _ip_candidates(record: dict[str, Any], asset: str) -> list[IPAddress]:
+    candidates: list[IPAddress] = []
     for value in (record.get("ip_str"), record.get("ip"), asset):
         if value is None:
             continue
@@ -278,7 +293,7 @@ def _sanitize_prompt_text(value: Any) -> str:
     for line in text.split("\n"):
         stripped = line.lstrip()
         indent = line[: len(line) - len(stripped)]
-        stripped = re.sub(r"^(#+)", lambda match: "\\" * len(match.group(1)) + match.group(1), stripped)
+        stripped = re.sub(r"^#", r"\\#", stripped, count=1)
         lines.append(indent + stripped)
     return "\n".join(lines)
 
@@ -654,6 +669,7 @@ def main() -> int:
     parser.add_argument(
         "--batch",
         type=Path,
+        required=True,
         help="Path to a JSON file with top-level 'shodan' and/or 'apify' keys.",
     )
     parser.add_argument(
@@ -673,11 +689,21 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    if not args.batch:
-        parser.error("--batch is required")
-
-    payload = json.loads(args.batch.read_text(encoding="utf-8"))
-    inventory = load_inventory(args.inventory)
+    try:
+        payload_text = args.batch.read_text(encoding="utf-8")
+    except OSError as exc:
+        parser.error(f"unable to read batch file {args.batch}: {exc}")
+    try:
+        payload = json.loads(payload_text)
+    except json.JSONDecodeError as exc:
+        parser.error(
+            f"invalid batch JSON in {args.batch}: {exc.msg} "
+            f"(line {exc.lineno}, column {exc.colno})"
+        )
+    try:
+        inventory = load_inventory(args.inventory)
+    except ValueError as exc:
+        parser.error(str(exc))
     findings = batch_normalize(payload, inventory=inventory)
 
     if args.zen_prompt:

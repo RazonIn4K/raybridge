@@ -10,3 +10,6 @@ ray-query.sqlite
 *.pid
 shim-test-results.json
 test-audit/
+.agents/
+.cursor/
+docs/

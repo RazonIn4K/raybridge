@@ -54,5 +54,22 @@ describe("auth normalization", () => {
     expect(auth.tokens.get("ext")?.[0]?.accessToken).toBe("a");
     expect(auth.prefs.ext.foo).toBe("bar");
   });
-});
 
+  it("normalizes backend dump with single token object", () => {
+    const auth = normalizeBackendDump({
+      tokens: { ext: { accessToken: "a" } },
+      prefs: {},
+    });
+
+    expect(auth.tokens.get("ext")?.length).toBe(1);
+    expect(auth.tokens.get("ext")?.[0]?.accessToken).toBe("a");
+  });
+
+  it("ignores non-object tokenSets JSON", () => {
+    const auth = normalizeExtensionsRows([
+      { name: "ext", tokenSets: "42" },
+    ]);
+
+    expect(auth.tokens.has("ext")).toBe(false);
+  });
+});

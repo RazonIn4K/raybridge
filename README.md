@@ -244,9 +244,9 @@ src/
 
 Local extensions are discovered from Raycast's extensions directory:
 - macOS: `~/.config/raycast/extensions/`
-- Windows: `~/.config/raycast-x/extensions/`
+- Windows: `~/.config/raycast-x/extensions/` or `~/.config/raycast/extensions/`
 
-Override with `RAYBRIDGE_RAYCAST_EXTENSIONS_DIR` if your Raycast install uses a different location.
+`getRaycastExtensionsDir()` checks both Windows locations and picks the one with extensions. Override with `RAYBRIDGE_RAYCAST_EXTENSIONS_DIR` if your Raycast install uses a different location.
 
 Each extension's `package.json` must have a `tools` array defining available tools with names, descriptions, and input schemas. Compiled tool code lives at `tools/{toolName}.js` within each extension directory.
 

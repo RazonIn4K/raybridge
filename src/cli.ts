@@ -69,7 +69,7 @@ function printSection(
 }
 
 async function listExtensions(): Promise<void> {
-  const { extensions, config } = await runWithSpinner(
+  const { extensions, config, didMigrate } = await runWithSpinner(
     "Loading extensions...",
     async () => {
       const [exts, rawConfig] = await Promise.all([
@@ -79,12 +79,14 @@ async function listExtensions(): Promise<void> {
       const { config: cfg, didMigrate } = normalizeLegacyConfig(rawConfig, exts);
       if (didMigrate) {
         await saveToolsConfig(cfg);
-        console.error("raybridge: Migrated config to blocklist-only format");
       }
-      return { extensions: exts, config: cfg };
+      return { extensions: exts, config: cfg, didMigrate };
     },
     process.stdout
   );
+  if (didMigrate) {
+    console.error("raybridge: Migrated config to blocklist-only format");
+  }
 
   const filteredExtensions = filterExtensions(extensions, config);
 

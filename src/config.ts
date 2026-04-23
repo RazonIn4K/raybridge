@@ -63,7 +63,17 @@ export function normalizeLegacyConfig(
 
   for (const [extName, rawExt] of Object.entries(rawExts)) {
     if (!rawExt || typeof rawExt !== "object") continue;
-    if (!extMap.has(extName)) continue; // Skip extensions not in discovery
+    if (!extMap.has(extName)) {
+      const preserved: ExtensionConfig = {
+        enabled: rawExt.enabled !== false,
+      };
+      if (Array.isArray(rawExt.disabledTools)) {
+        const disabledTools = rawExt.disabledTools.filter((t): t is string => typeof t === "string");
+        if (disabledTools.length > 0) preserved.disabledTools = disabledTools;
+      }
+      extensionsOut[extName] = preserved;
+      continue;
+    }
 
     // Extension enabled: blocklist default true, allowlist default false
     let enabled: boolean;

@@ -103,7 +103,7 @@ function App({ onExit }: AppProps) {
 
   // Animated loading spinner (braille frames when TTY, else static fallback)
   const [spinnerFrame, setSpinnerFrame] = useState(0);
-  const spinnerFrames = getSpinnerFrames("braille");
+  const spinnerFrames = useMemo(() => getSpinnerFrames("braille"), []);
   const loadingIndicator = isInteractive(process.stdout)
     ? spinnerFrames.frames[spinnerFrame % spinnerFrames.frames.length]
     : "◈";
@@ -131,7 +131,7 @@ function App({ onExit }: AppProps) {
     // Header: logo (7 lines) + blank + stats bar = 9
     // Footer: scroll indicator + controls = 2
     return Math.max(rows - 11, 5);
-  }, []);
+  }, [terminalSize]);
 
   // Build flat navigation list
   const navItems = useMemo((): NavItem[] => {
@@ -320,7 +320,7 @@ function App({ onExit }: AppProps) {
       const message = err instanceof Error ? err.message : String(err);
       setState((s) => ({ ...s, saving: false, error: `Save failed: ${message}` }));
     }
-  }, [state.config]);
+  }, [state.config, state.saving]);
 
   // Scroll to keep cursor visible
   const scrollToCursor = useCallback((newCursor: number) => {
@@ -347,7 +347,6 @@ function App({ onExit }: AppProps) {
         ...s,
         cursor: newCursor,
         scrollOffset: Math.max(0, newOffset),
-        saved: false,
       };
     });
   }, [visibleRows, navItems]);

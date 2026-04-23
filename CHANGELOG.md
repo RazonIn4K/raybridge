@@ -15,4 +15,4 @@ Initial release.
 - Interactive TUI for extension configuration
 - OAuth token integration from Raycast's encrypted database
 - Raycast API shims for headless tool execution
-- Blocklist-only config for tool management
+- Configurable tool management

@@ -145,16 +145,34 @@ describe("config", () => {
       expect(config.extensions).toEqual({});
     });
 
-    it("skips extensions not in discovery", () => {
+    it("preserves extensions not in discovery", () => {
       const raw: RawToolsConfig = {
         extensions: {
           "ext-a": { enabled: false },
-          "unknown-ext": { enabled: false },
+          "unknown-ext": { enabled: false, disabledTools: ["old-tool"] },
         },
       };
       const { config } = normalizeLegacyConfig(raw, extensions);
       expect(config.extensions["ext-a"]).toEqual({ enabled: false });
-      expect(config.extensions["unknown-ext"]).toBeUndefined();
+      expect(config.extensions["unknown-ext"]).toEqual({
+        enabled: false,
+        disabledTools: ["old-tool"],
+      });
+    });
+
+    it("migrates allowlist mode with a tools allowlist", () => {
+      const raw: RawToolsConfig = {
+        mode: "allowlist",
+        extensions: {
+          "ext-a": { enabled: true, tools: ["t1"] },
+        },
+      };
+      const { config, didMigrate } = normalizeLegacyConfig(raw, extensions);
+      expect(didMigrate).toBe(true);
+      expect(config.extensions["ext-a"]).toEqual({
+        enabled: true,
+        disabledTools: ["t2", "t3"],
+      });
     });
   });
 });

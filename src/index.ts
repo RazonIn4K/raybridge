@@ -10,7 +10,7 @@ import { homedir } from "node:os";
 import { discoverExtensions, type ExtensionEntry } from "./discovery.js";
 import { executeTool } from "./loader.js";
 import { setPreferences, setRaycastTokens } from "./shims.js";
-import { loadRaycastAuthData } from "./auth.js";
+import { loadRaycastAuthData, type RaycastAuthData } from "./auth.js";
 import {
   loadToolsConfig,
   saveToolsConfig,
@@ -175,7 +175,7 @@ export function createMcpServer(ctx: ServerContext): Server {
     }
 
     const tool = entry.ext.tools[entry.toolIndex];
-    const inputSummary = redactSecrets(JSON.stringify(args.input || {}).slice(0, 200));
+    const inputSummary = redactSecrets(JSON.stringify(args.input || {})).slice(0, 200);
     const startTime = Date.now();
 
     console.error(`raybridge: [CALL] ${extName}/${args.tool_name} input=${inputSummary}`);
@@ -252,7 +252,7 @@ export async function loadServerContext(): Promise<ServerContext> {
   }
 
   // Load Raycast auth data once (tokens + prefs), then merge with manual prefs.
-  let auth = { tokens: new Map(), prefs: {} as Record<string, Record<string, unknown>> };
+  let auth: RaycastAuthData = { tokens: new Map(), prefs: {} };
   try {
     auth = await loadRaycastAuthData();
   } catch (err: any) {
@@ -307,7 +307,7 @@ export async function reloadServerContext(ctx: ServerContext): Promise<boolean> 
     console.error("raybridge: Migrated config to blocklist-only format");
   }
 
-  let auth = { tokens: new Map(), prefs: {} as Record<string, Record<string, unknown>> };
+  let auth: RaycastAuthData = { tokens: new Map(), prefs: {} };
   try {
     auth = await loadRaycastAuthData();
   } catch (err: any) {
@@ -358,10 +358,11 @@ async function main() {
   const servers: Server[] = [];
 
   if (http) {
+    const normalizedHost = host.trim().replace(/^\[(.*)\]$/, "$1");
     const isLoopback =
-      host === "127.0.0.1" ||
-      host === "localhost" ||
-      host === "::1";
+      normalizedHost === "127.0.0.1" ||
+      normalizedHost === "localhost" ||
+      normalizedHost === "::1";
     if (!isLoopback) {
       console.error("raybridge: WARNING: HTTP is bound to a non-loopback interface.");
       console.error("raybridge: WARNING: This may expose Raycast OAuth tokens to other machines/users.");

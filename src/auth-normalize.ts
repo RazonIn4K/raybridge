@@ -16,8 +16,11 @@ function safeJsonParse(value: string): any | null {
 
 function normalizeTokenSets(value: string): TokenSet[] | null {
   const parsed = safeJsonParse(value);
-  if (!parsed) return null;
+  if (!parsed || typeof parsed !== "object") return null;
   const sets = Array.isArray(parsed) ? parsed : [parsed];
+  if (!sets.every((set) => set && typeof set === "object" && !Array.isArray(set))) {
+    return null;
+  }
   return sets.length > 0 ? (sets as TokenSet[]) : null;
 }
 
@@ -91,4 +94,3 @@ export function normalizeBackendDump(parsed: unknown): RaycastAuthData {
 
   return { tokens, prefs };
 }
-

@@ -5,17 +5,25 @@
  * Only animates when attached to a TTY; no-ops in pipes, logs, CI.
  */
 
-import spinners from "unicode-animations";
+const SPINNERS = {
+  braille: {
+    frames: ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"],
+    interval: 80,
+  },
+  orbit: {
+    frames: ["◜", "◠", "◝", "◞", "◡", "◟"],
+    interval: 90,
+  },
+} as const;
 
 export function isInteractive(stream: NodeJS.WriteStream = process.stdout): boolean {
   return Boolean(stream?.isTTY);
 }
 
 export function getSpinnerFrames(
-  name: keyof typeof spinners = "braille"
+  name: keyof typeof SPINNERS = "braille"
 ): { frames: readonly string[]; interval: number } {
-  const s = spinners[name];
-  return s ? { frames: s.frames, interval: s.interval } : spinners.braille;
+  return SPINNERS[name] ?? SPINNERS.braille;
 }
 
 const MIN_DISPLAY_MS = 400;
@@ -78,7 +86,7 @@ export const MIN_LOADING_MS = MIN_DISPLAY_MS;
 export function startSpinner(
   message: string,
   stream: NodeJS.WriteStream = process.stdout,
-  name: keyof typeof spinners = "orbit"
+  name: keyof typeof SPINNERS = "orbit"
 ): () => void {
   if (!isInteractive(stream)) return () => {};
 
@@ -98,10 +106,11 @@ export function startSpinner(
   }, interval);
 
   return () => {
+    if (stopped) return;
     const elapsed = Date.now() - start;
     const remaining = Math.max(0, MIN_DISPLAY_MS - elapsed);
+    stopped = true;
     const cleanup = () => {
-      stopped = true;
       clearInterval(timer);
       stream.write(clearLine + showCursor);
     };

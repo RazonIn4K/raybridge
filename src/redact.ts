@@ -11,7 +11,7 @@ export function redactSecrets(msg: string): string {
   let out = String(msg);
 
   // Bearer tokens in headers/log lines.
-  out = out.replace(/\bBearer\s+[A-Za-z0-9._~+/=-]{8,}\b/gi, "Bearer [REDACTED]");
+  out = out.replace(/\bBearer\s+[A-Za-z0-9._~+/=-]{8,}(?=\s|$)/gi, "Bearer [REDACTED]");
 
   // Common token/key fields (Raycast + generic).
   for (const key of [
@@ -35,4 +35,3 @@ export function redactSecrets(msg: string): string {
 
   return out;
 }
-

@@ -22,6 +22,16 @@ import { resolveWindowsPowerShellExe } from "./windows-exe.js";
 import { normalizeBackendDump, normalizeExtensionsRows } from "./auth-normalize.js";
 
 const RAYCAST_SALT = "yvkwWXzxPPBAqY2tmaKrB*DvYjjMaeEf";
+const SQLCIPHER_CANDIDATES = [
+  process.env.RAYBRIDGE_SQLCIPHER_PATH,
+  process.env.SQLCIPHER_BIN,
+  "/opt/homebrew/bin/sqlcipher",
+  "/usr/local/bin/sqlcipher",
+  "/opt/local/bin/sqlcipher",
+  "sqlcipher",
+]
+  .map((value) => value?.trim())
+  .filter((value): value is string => Boolean(value));
 
 export interface TokenSet {
   accessToken: string;
@@ -41,6 +51,24 @@ export interface RaycastAuthData {
 }
 
 const emptyAuthData = (): RaycastAuthData => ({ tokens: new Map(), prefs: {} });
+
+function resolveSqlcipherPath(): string {
+  for (const candidate of SQLCIPHER_CANDIDATES) {
+    try {
+      execFileSync(candidate, ["--version"], {
+        encoding: "utf-8",
+        stdio: "ignore",
+      });
+      return candidate;
+    } catch {
+      // Keep trying other candidates.
+    }
+  }
+
+  throw new Error(
+    "sqlcipher not found. Install it or set RAYBRIDGE_SQLCIPHER_PATH or SQLCIPHER_BIN to the binary path."
+  );
+}
 
 let lastWindowsAuthFailure: { atMs: number; reason: string } | null = null;
 function logWindowsAuthFailure(reason: string) {
@@ -134,7 +162,7 @@ function loadRaycastAuthDataMacSqlcipher(): RaycastAuthData {
   if (!existsSync(dbPath)) return emptyAuthData();
 
   const passphrase = getMacDatabasePassphrase();
-  const sqlcipherExe = process.env.RAYBRIDGE_SQLCIPHER_PATH?.trim() || "sqlcipher";
+  const sqlcipherExe = resolveSqlcipherPath();
 
   const sql =
     "SELECT name, tokenSets, preferences FROM extensions " +

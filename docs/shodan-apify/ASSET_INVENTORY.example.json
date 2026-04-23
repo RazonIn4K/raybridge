@@ -1,0 +1,16 @@
+{
+  "owned_ips": [
+    "203.0.113.10",
+    "198.51.100.0/24"
+  ],
+  "monitored_ips": [
+    "192.0.2.0/24"
+  ],
+  "owned_domains": [
+    "example.org",
+    "corp.example.org"
+  ],
+  "monitored_domains": [
+    "vendor.example.net"
+  ]
+}

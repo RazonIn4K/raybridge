@@ -12,7 +12,7 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Sequence, Union
 from urllib.parse import urlparse
 
 
@@ -33,8 +33,8 @@ SECURITY_HEADERS = (
 PROMPT_ROLE_RE = re.compile(
     r"(?im)^(\s*)(system|developer|user|human|assistant|tool|function)\s*:"
 )
-IPNetwork = ipaddress.IPv4Network | ipaddress.IPv6Network
-IPAddress = ipaddress.IPv4Address | ipaddress.IPv6Address
+IPNetwork = Union[ipaddress.IPv4Network, ipaddress.IPv6Network]
+IPAddress = Union[ipaddress.IPv4Address, ipaddress.IPv6Address]
 
 
 @dataclass
@@ -270,19 +270,20 @@ def resolve_ownership(asset: str, record: dict[str, Any], inventory: dict[str, A
     else:
         prepared = _prepare_inventory(inventory)
 
+    matched_monitored = False
     for ip_value in _ip_candidates(record, asset):
         if any(ip_value in network for network in prepared["owned_networks"]):
             return "owned"
         if any(ip_value in network for network in prepared["monitored_networks"]):
-            return "monitored"
+            matched_monitored = True
 
     for domain in _domain_candidates(record, asset):
         if _domain_matches_scope(domain, prepared["owned_domains"]):
             return "owned"
         if _domain_matches_scope(domain, prepared["monitored_domains"]):
-            return "monitored"
+            matched_monitored = True
 
-    return "unknown"
+    return "monitored" if matched_monitored else "unknown"
 
 
 def _sanitize_prompt_text(value: Any) -> str:
@@ -466,7 +467,7 @@ def normalize_shodan_host(
         subject = cert.get("subject") or {}
         cn = subject.get("CN") or subject.get("cn")
         if cn and hostnames and not _hostname_matches(str(cn), hostnames):
-            finding.raise_severity("high" if finding.severity == "critical" else "medium")
+            finding.raise_severity("medium")
             finding.add_evidence(
                 f"Certificate CN '{cn}' does not match discovered hostnames/domains: {', '.join(hostnames[:6])}"
             )

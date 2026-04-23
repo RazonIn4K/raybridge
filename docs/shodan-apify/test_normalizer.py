@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import importlib.util
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -77,9 +78,10 @@ class NormalizerTests(unittest.TestCase):
         self.assertNotIn("tool:", extra)
 
     def test_inventory_resolution_marks_owned_and_monitored_assets(self) -> None:
-        inventory = normalizer.load_inventory(None)
-        inventory["owned_networks"] = normalizer._parse_networks(["203.0.113.0/24"])
-        inventory["monitored_domains"] = {"example.com"}
+        inventory = {
+            "owned_ips": ["203.0.113.0/24"],
+            "monitored_domains": ["example.com"],
+        }
 
         owned = normalizer.normalize_shodan_host({"ip_str": "203.0.113.5", "ports": [443]}, inventory=inventory)
         monitored = normalizer.normalize_apify_result(
@@ -89,6 +91,14 @@ class NormalizerTests(unittest.TestCase):
 
         self.assertEqual(owned[0]["ownership"], "owned")
         self.assertEqual(monitored[0]["ownership"], "monitored")
+
+    def test_load_inventory_reports_invalid_json(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            inventory_path = Path(tmpdir) / "inventory.json"
+            inventory_path.write_text("{not json", encoding="utf-8")
+
+            with self.assertRaisesRegex(ValueError, "Invalid inventory JSON"):
+                normalizer.load_inventory(inventory_path)
 
     def test_raw_inventory_shape_is_supported(self) -> None:
         raw_inventory = {

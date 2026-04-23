@@ -118,6 +118,23 @@ class NormalizerTests(unittest.TestCase):
         self.assertEqual(owned[0]["ownership"], "owned")
         self.assertEqual(monitored[0]["ownership"], "monitored")
 
+    def test_owned_scope_takes_precedence_over_monitored_matches(self) -> None:
+        raw_inventory = {
+            "monitored_ips": ["203.0.113.0/24"],
+            "owned_domains": ["example.com"],
+        }
+
+        findings = normalizer.normalize_apify_result(
+            {
+                "url": "https://app.example.com/login",
+                "ip": "203.0.113.5",
+                "pageTitle": "Dashboard",
+            },
+            inventory=raw_inventory,
+        )
+
+        self.assertEqual(findings[0]["ownership"], "owned")
+
     def test_batch_summary_prioritizes_highest_severity(self) -> None:
         findings = normalizer.batch_normalize(
             {

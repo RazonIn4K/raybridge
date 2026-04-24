@@ -536,7 +536,7 @@ let renderer: CliRenderer | null = null;
 export async function launchTUI(): Promise<void> {
   renderer = await createCliRenderer({
     exitOnCtrlC: true,
-    useAlternateScreen: true,
+    screenMode: "alternate-screen",
   });
 
   const root = createRoot(renderer);

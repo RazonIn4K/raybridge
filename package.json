@@ -2,6 +2,17 @@
   "name": "raybridge",
   "version": "1.0.0",
   "description": "MCP server exposing Raycast extension tools to MCP clients",
+  "keywords": [
+    "raycast",
+    "mcp",
+    "codex",
+    "chatgpt",
+    "claude",
+    "claude-desktop",
+    "claude-code",
+    "http-server",
+    "bun"
+  ],
   "type": "module",
   "main": "src/index.ts",
   "bin": {
@@ -13,7 +24,15 @@
     "dev": "bun --watch src/index.ts",
     "dev:http": "MCP_HTTP=true bun --watch src/index.ts",
     "config": "bun run src/cli.ts",
+    "typecheck": "tsc --noEmit",
+    "test:config": "bun run src/test-config.ts",
+    "test:logging": "bun run src/test-logging.ts",
+    "test:catalog": "bun run src/test-catalog.ts",
+    "test:worker": "bun run src/test-worker.ts",
+    "test:shim-gates": "bun run src/test-shim-gates.ts",
     "test:shims": "bun run src/test-shims.ts",
+    "test:shims:execute": "bun run src/test-shims.ts --execute",
+    "verify:repo": "bun run typecheck && bun run test:config && bun run test:logging && bun run test:catalog && bun run test:worker && bun run test:shim-gates && bun run test:shims",
     "start:bg": "nohup bun run start:http > raybridge.log 2>&1 & echo $! > raybridge.pid && tail -f raybridge.log"
   },
   "dependencies": {
@@ -39,6 +58,5 @@
   "homepage": "https://github.com/RazonIn4K/raybridge#readme",
   "bugs": {
     "url": "https://github.com/RazonIn4K/raybridge/issues"
-  },
-  "keywords": ["mcp", "raycast", "claude", "claude-code", "model-context-protocol"]
+  }
 }

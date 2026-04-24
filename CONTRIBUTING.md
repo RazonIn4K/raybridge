@@ -14,6 +14,17 @@ Thank you for your interest in contributing to RayBridge!
    ```bash
    bun run dev
    ```
+5. Run repo checks before submitting:
+   ```bash
+   bun run verify:repo
+   ```
+
+`bun run test:shims` is a safe loadability check by default. Use
+`bun run test:shims:execute` only when you intentionally want to execute live
+Raycast extension tools.
+
+`bun run test:worker` checks the default isolated worker execution path with a
+side-effect-free tool call plus worker error and timeout paths.
 
 ## Code Style
 

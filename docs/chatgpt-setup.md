@@ -11,15 +11,20 @@ ChatGPT cannot connect to localhost. You need a public HTTPS endpoint.
 
 ## Step 1: Start RayBridge HTTP
 
-Generate a strong API key and start the server:
+Start the server without `MCP_API_KEY` for the ChatGPT Developer Mode **No authentication** flow. ChatGPT does not send custom Bearer headers.
 
 ```bash
-export MCP_API_KEY=$(openssl rand -hex 32)
-echo "Save this key: $MCP_API_KEY"
 bash scripts/start-http.sh
 ```
 
 Leave this terminal running.
+
+For non-ChatGPT HTTP clients that can send `Authorization: Bearer ...`, you can still enable the bearer middleware:
+
+```bash
+export MCP_API_KEY=$(openssl rand -hex 32)
+bash scripts/start-http.sh
+```
 
 ## Step 2: Start Cloudflare Tunnel
 
@@ -53,7 +58,7 @@ https://abc-xyz-123.trycloudflare.com/mcp
 
 1. Still in Apps & Connectors, click **Create**
 2. Paste the tunnel URL: `https://abc-xyz-123.trycloudflare.com/mcp`
-3. Select **No authentication** (the MCP_API_KEY is handled at the transport level, not OAuth — ChatGPT's "no auth" means no OAuth flow)
+3. Select **No authentication**
 4. ChatGPT will discover the available tools and list them
 5. Click **Save**
 
@@ -87,11 +92,11 @@ Then use `https://mcp.yourdomain.com/mcp` as the ChatGPT app URL. This survives 
 
 ## Adding Cloudflare Access (recommended)
 
-For an extra security layer beyond the bearer token:
+For a stable public endpoint, add an access layer that is compatible with your ChatGPT connector flow:
 
 1. In Cloudflare Zero Trust dashboard, create an Access Application
 2. Set the domain to `mcp.yourdomain.com`
 3. Add a policy (e.g., email OTP, or IP allowlist)
 4. ChatGPT will need to authenticate through the Access flow
 
-This prevents anyone who discovers your tunnel URL from reaching the MCP endpoint.
+When using ChatGPT's **No authentication** option, do not set `MCP_API_KEY`; the bearer middleware will reject ChatGPT requests because it cannot send that header.

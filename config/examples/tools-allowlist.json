@@ -1,6 +1,14 @@
 {
-  "_comment": "Generated from verify.sh — 22 extensions discovered, 130+ tools. This allowlist enables a curated subset. Edit as needed.",
+  "_comment": "Curated RayBridge allowlist. Enable only the Raycast extensions and tools you want exposed.",
   "mode": "allowlist",
+  "raycastApi": {
+    "enableLocalStorage": true,
+    "enableClipboard": true,
+    "enableSystemActions": true,
+    "enableDestructiveSystemActions": false,
+    "enableAppleScript": false,
+    "enableCommandLaunch": false
+  },
   "extensions": {
     "github": {
       "enabled": true,
@@ -27,6 +35,8 @@
         "search-events",
         "check-availability",
         "edit-event",
+        "search-contacts",
+        "get-current-user",
         "get-current-time",
         "list-calendars"
       ]
@@ -41,6 +51,7 @@
         "get-channels",
         "get-channel-history",
         "get-users",
+        "get-emojis",
         "set-status",
         "search-messages"
       ]
@@ -52,6 +63,7 @@
         "searchNote",
         "createNote",
         "readNote",
+        "openNote",
         "appendNote",
         "updateNote"
       ]
@@ -62,11 +74,18 @@
     },
     "apple-reminders": {
       "enabled": true,
-      "tools": ["create-reminder", "get-lists", "get-reminders", "update-reminder"]
+      "tools": [
+        "create-reminder",
+        "get-lists",
+        "get-reminders",
+        "get-locations",
+        "get-completed-reminders",
+        "update-reminder"
+      ]
     },
     "kill-process": {
-      "enabled": true,
-      "tools": ["list-processes", "kill-process"]
+      "enabled": false,
+      "_note": "Available but disabled by default — enabling lets the AI terminate arbitrary processes."
     },
     "arc": {
       "enabled": true,
@@ -75,20 +94,17 @@
         "get-tabs",
         "select-tab",
         "get-spaces",
+        "get-active-space",
         "search-history"
       ]
     },
     "downloads-manager": {
       "enabled": true,
-      "tools": ["get-latest-download", "open-latest-download", "show-latest-download"]
-    },
-    "ccusage": {
-      "enabled": true,
       "tools": [
-        "get-daily-usage",
-        "get-total-usage",
-        "get-monthly-usage",
-        "get-usage-limits"
+        "get-latest-download",
+        "copy-latest-download",
+        "open-latest-download",
+        "show-latest-download"
       ]
     },
     "video-downloader": {
@@ -99,13 +115,24 @@
       "enabled": true,
       "tools": ["base64-encode", "base64-decode"]
     },
+    "ccusage": {
+      "enabled": false,
+      "_note": "Disabled by request — Claude Code usage stats are not needed in RayBridge"
+    },
     "music": {
       "enabled": false,
       "_note": "Available but disabled by default — enable if you want AI to control Apple Music"
     },
     "xcode": {
-      "enabled": false,
-      "_note": "Available but disabled by default — enable for iOS/macOS development workflows"
+      "enabled": true,
+      "tools": [
+        "xcode-projects",
+        "xcode-swift-package-resolved",
+        "xcode-simulators",
+        "xcode-simulator-applications",
+        "xcode-releases"
+      ],
+      "_note": "Read-only Xcode inventory tools are enabled; simulator control and cache cleanup tools stay disabled by default."
     },
     "sips": {
       "enabled": false,
@@ -116,7 +143,8 @@
       "_note": "Available but disabled by default — file conversion"
     },
     "svgl": {
-      "enabled": false
+      "enabled": true,
+      "tools": ["get-svg-logo", "get-svg-component"]
     },
     "timers": {
       "enabled": false

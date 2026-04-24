@@ -3,4 +3,4 @@
 
 brew "bun"
 brew "sqlcipher"
-brew "cloudflared"  # optional, for ChatGPT web HTTPS tunneling
+brew "cloudflared"  # installed by brew bundle; remove this line if you do not need ChatGPT web HTTPS tunneling

@@ -111,7 +111,7 @@ function App({ onExit }: AppProps) {
     // Header: logo (7 lines) + blank + stats bar = 9
     // Footer: scroll indicator + controls = 2
     return Math.max(rows - 11, 5);
-  }, []);
+  }, [terminalSize]);
 
   // Build flat navigation list
   const navItems = useMemo((): NavItem[] => {

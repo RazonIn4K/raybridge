@@ -19,7 +19,15 @@ cmd = [
     "database_key",
     "-w",
 ]
-timeout_seconds = float(os.getenv("RAYBRIDGE_KEYCHAIN_TIMEOUT_SECONDS", "60"))
+raw_timeout = os.getenv("RAYBRIDGE_KEYCHAIN_TIMEOUT_SECONDS", "60")
+try:
+    timeout_seconds = float(raw_timeout)
+except ValueError:
+    print(
+        "Invalid RAYBRIDGE_KEYCHAIN_TIMEOUT_SECONDS value; falling back to 60 seconds.",
+        file=sys.stderr,
+    )
+    timeout_seconds = 60
 timeout = None if timeout_seconds <= 0 else timeout_seconds
 
 try:

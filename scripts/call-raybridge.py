@@ -4,6 +4,9 @@
 Examples:
   python3 call_raybridge.py list
   python3 call_raybridge.py call --mcp-tool my-extension --raycast-tool my-tool --input-json '{"query":"hello"}'
+  python3 call_raybridge.py catalog --action search --query calendar
+  python3 call_raybridge.py catalog --action doctor
+  python3 call_raybridge.py catalog --action recommend --limit 10
 """
 from __future__ import annotations
 
@@ -79,6 +82,8 @@ def post_json(
         if not events:
             raise RuntimeError(f"Could not parse SSE response: {body}")
         parsed = events[-1]
+    elif not body.strip():
+        parsed = {}
     else:
         try:
             parsed = json.loads(body)
@@ -119,6 +124,12 @@ def initialize(url: str, api_key: Optional[str]) -> str:
         raise RuntimeError(f"Initialize failed: {json.dumps(response, indent=2)}")
     if not session_id:
         raise RuntimeError("Initialize succeeded but no mcp-session-id header was returned.")
+    initialized = {
+        "jsonrpc": "2.0",
+        "method": "notifications/initialized",
+        "params": {},
+    }
+    post_json(url, initialized, api_key=api_key, session_id=session_id)
     return session_id
 
 
@@ -152,6 +163,26 @@ def call_tool(
     return response
 
 
+def call_mcp_tool(
+    url: str,
+    api_key: Optional[str],
+    session_id: str,
+    mcp_tool: str,
+    arguments: Dict[str, Any],
+) -> Dict[str, Any]:
+    payload = {
+        "jsonrpc": "2.0",
+        "id": 3,
+        "method": "tools/call",
+        "params": {
+            "name": mcp_tool,
+            "arguments": arguments,
+        },
+    }
+    response, _ = post_json(url, payload, api_key=api_key, session_id=session_id)
+    return response
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Call a RayBridge MCP server over HTTP.")
     parser.add_argument("--url", default=DEFAULT_URL, help=f"MCP endpoint (default: {DEFAULT_URL})")
@@ -160,6 +191,19 @@ def main() -> int:
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("list", help="List available MCP tools")
+
+    catalog = sub.add_parser("catalog", help="Call the built-in RayBridge catalog tool")
+    catalog.add_argument(
+        "--action",
+        choices=["summary", "search", "detail", "config", "doctor", "recommend"],
+        default="summary",
+        help="Catalog action to run",
+    )
+    catalog.add_argument("--query", default=None, help="Search query for --action search")
+    catalog.add_argument("--extension-name", default=None, help="Extension name for --action detail")
+    catalog.add_argument("--limit", type=int, default=25, help="Maximum search results")
+    catalog.add_argument("--enabled-only", action="store_true", help="Hide disabled extensions/tools")
+    catalog.add_argument("--no-commands", action="store_true", help="Hide command-only entries")
 
     call = sub.add_parser("call", help="Call a specific RayBridge tool")
     call.add_argument("--mcp-tool", required=True, help="The MCP tool name exposed by RayBridge (usually an extension name)")
@@ -172,10 +216,29 @@ def main() -> int:
 
     args = parser.parse_args()
 
+    session_id = None
     try:
         session_id = initialize(args.url, args.api_key)
         if args.command == "list":
             result = list_tools(args.url, args.api_key, session_id)
+        elif args.command == "catalog":
+            catalog_args = {
+                "action": args.action,
+                "includeDisabled": not args.enabled_only,
+                "includeCommands": not args.no_commands,
+                "limit": args.limit,
+            }
+            if args.query:
+                catalog_args["query"] = args.query
+            if args.extension_name:
+                catalog_args["extensionName"] = args.extension_name
+            result = call_mcp_tool(
+                args.url,
+                args.api_key,
+                session_id,
+                "raybridge",
+                catalog_args,
+            )
         else:
             try:
                 input_obj = json.loads(args.input_json)
@@ -197,10 +260,7 @@ def main() -> int:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
     finally:
-        try:
-            delete_session(args.url, args.api_key, locals().get("session_id"))
-        except Exception:
-            pass
+        delete_session(args.url, args.api_key, session_id)
 
 
 if __name__ == "__main__":

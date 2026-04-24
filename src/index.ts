@@ -7,12 +7,21 @@ import {
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { homedir } from "node:os";
+import { pathToFileURL } from "node:url";
 import { discoverExtensions, type ExtensionEntry } from "./discovery.js";
 import { executeTool } from "./loader.js";
-import { setPreferences, setRaycastTokens } from "./shims.js";
-import { loadRaycastTokens, loadRaycastPreferences } from "./auth.js";
-import { loadToolsConfig, filterExtensions } from "./config.js";
+import { executeToolInWorker } from "./worker-executor.js";
+import { setPreferences, setRaycastTokens, setShimConfig } from "./shims.js";
+import { loadRaycastTokens, loadRaycastPreferences, type TokenSet } from "./auth.js";
+import { loadToolsConfig, filterExtensions, type ToolsConfig } from "./config.js";
 import { startExtensionWatcher } from "./watcher.js";
+import { formatEvalExamples } from "./evals.js";
+import {
+  buildRaybridgeToolDef,
+  RAYBRIDGE_TOOL_NAME,
+  runRaybridgeCatalogTool,
+} from "./catalog.js";
+import { redactText, safeJsonPreview } from "./logging.js";
 
 export interface ToolDef {
   name: string;
@@ -24,6 +33,74 @@ export interface ServerContext {
   extensions: ExtensionEntry[];
   tools: ToolDef[];
   lookup: Map<string, { ext: ExtensionEntry; toolIndex: number }>;
+  toolsConfig: ToolsConfig;
+  preferences: Record<string, Record<string, unknown>>;
+  raycastTokens: Map<string, TokenSet[]>;
+}
+
+function getRequiredProperties(schema: Record<string, unknown>): string[] {
+  const required = schema.required;
+  return Array.isArray(required)
+    ? required.filter((value): value is string => typeof value === "string")
+    : [];
+}
+
+function getObjectInputSchema(schema: Record<string, unknown>): Record<string, unknown> {
+  if (schema && schema.type === "object") {
+    return schema;
+  }
+
+  return {
+    type: "object",
+    properties: {},
+    additionalProperties: true,
+  };
+}
+
+function buildExtensionInputSchema(ext: ExtensionEntry): Record<string, unknown> {
+  const toolNameEnum = ext.tools.map((t) => t.name);
+  const variants = ext.tools.map((tool) => {
+    const toolSchema = getObjectInputSchema(tool.inputSchema);
+    const required = getRequiredProperties(toolSchema);
+
+    return {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        tool_name: {
+          type: "string",
+          enum: [tool.name],
+          description: `Run the ${tool.name} Raycast tool.`,
+        },
+        input: {
+          ...toolSchema,
+          description: `Input parameters for ${tool.name}.`,
+        },
+      },
+      required: required.length > 0 ? ["tool_name", "input"] : ["tool_name"],
+    };
+  });
+
+  return {
+    type: "object",
+    description:
+      "Select exactly one Raycast tool by tool_name and pass that tool's parameters in input.",
+    properties: {
+      tool_name: {
+        type: "string",
+        enum: toolNameEnum,
+        description: "Which tool to run",
+      },
+      input: {
+        type: "object",
+        description:
+          "Input parameters for the selected tool. The oneOf entries below contain the exact schema for each tool_name.",
+        additionalProperties: true,
+      },
+    },
+    required: ["tool_name"],
+    oneOf: variants,
+  };
 }
 
 async function loadPreferences(): Promise<
@@ -46,10 +123,17 @@ export function buildToolDefs(extensions: ExtensionEntry[]): {
   tools: ToolDef[];
   lookup: Map<string, { ext: ExtensionEntry; toolIndex: number }>;
 } {
-  const tools: ToolDef[] = [];
+  const tools: ToolDef[] = [buildRaybridgeToolDef()];
   const lookup = new Map<string, { ext: ExtensionEntry; toolIndex: number }>();
 
   for (const ext of extensions) {
+    if (ext.extensionName === RAYBRIDGE_TOOL_NAME) {
+      console.error(
+        `raybridge: Skipping extension named "${RAYBRIDGE_TOOL_NAME}" because it conflicts with the built-in catalog tool`
+      );
+      continue;
+    }
+
     // Build tool catalog with full instructions
     const toolCatalog = ext.tools
       .map((t) => {
@@ -80,28 +164,15 @@ export function buildToolDefs(extensions: ExtensionEntry[]): {
     if (ext.aiInstructions) {
       description += `\n\n---\nExtension instructions:\n${ext.aiInstructions}`;
     }
+    const evalExamples = formatEvalExamples(
+      ext.aiEvals,
+      new Set(ext.tools.map((tool) => tool.name))
+    );
+    if (evalExamples) {
+      description += `\n\n---\n${evalExamples}`;
+    }
 
-    // Build a combined JSON Schema with tool_name enum + input object
-    const toolNameEnum = ext.tools.map((t) => t.name);
-
-    // Build a JSON Schema "oneOf" or keep it simple with tool_name + input
-    const inputSchema: Record<string, unknown> = {
-      type: "object",
-      properties: {
-        tool_name: {
-          type: "string",
-          enum: toolNameEnum,
-          description: "Which tool to run",
-        },
-        input: {
-          type: "object",
-          description:
-            "Input parameters for the selected tool (see tool descriptions for schema)",
-          additionalProperties: true,
-        },
-      },
-      required: ["tool_name"],
-    };
+    const inputSchema = buildExtensionInputSchema(ext);
 
     tools.push({
       name: ext.extensionName,
@@ -138,6 +209,14 @@ export function createMcpServer(ctx: ServerContext): Server {
       input?: Record<string, unknown>;
     };
 
+    if (extName === RAYBRIDGE_TOOL_NAME) {
+      const result = await runRaybridgeCatalogTool(
+        (request.params.arguments || {}) as Record<string, unknown>,
+        ctx.toolsConfig
+      );
+      return { content: [{ type: "text" as const, text: result }] };
+    }
+
     if (!args.tool_name) {
       return {
         content: [
@@ -169,25 +248,39 @@ export function createMcpServer(ctx: ServerContext): Server {
     }
 
     const tool = entry.ext.tools[entry.toolIndex];
-    const inputSummary = JSON.stringify(args.input || {}).slice(0, 200);
+    const inputSummary = safeJsonPreview(args.input || {});
     const startTime = Date.now();
 
     console.error(`raybridge: [CALL] ${extName}/${args.tool_name} input=${inputSummary}`);
 
     try {
-      const result = await executeTool(
-        tool.jsPath,
-        args.input || {},
-        entry.ext.extensionName,
-        entry.ext.extensionDir
-      );
+      const result =
+        process.env.RAYBRIDGE_IN_PROCESS === "true"
+          ? await executeTool(
+              tool.jsPath,
+              args.input || {},
+              entry.ext.extensionName,
+              entry.ext.extensionDir
+            )
+          : await executeToolInWorker(
+              {
+                jsPath: tool.jsPath,
+                input: args.input || {},
+                extensionName: entry.ext.extensionName,
+                extensionDir: entry.ext.extensionDir,
+              },
+              {
+                preferences: ctx.preferences,
+                raycastTokens: ctx.raycastTokens,
+                shimConfig: ctx.toolsConfig.raycastApi,
+              }
+            );
       const duration = Date.now() - startTime;
-      const resultPreview = result.slice(0, 100).replace(/\n/g, "\\n");
-      console.error(`raybridge: [OK] ${extName}/${args.tool_name} (${duration}ms) result=${resultPreview}...`);
+      console.error(`raybridge: [OK] ${extName}/${args.tool_name} (${duration}ms) resultLength=${result.length}`);
       return { content: [{ type: "text" as const, text: result }] };
     } catch (err: any) {
       const duration = Date.now() - startTime;
-      const msg = err.message || String(err);
+      const msg = redactText(err.message || String(err));
       console.error(`raybridge: [ERR] ${extName}/${args.tool_name} (${duration}ms) error=${msg.slice(0, 150)}`);
       const isAuthError =
         /token|oauth|unauthorized|403|401|invalid_grant|Missing required parameter: code/i.test(msg);
@@ -208,7 +301,7 @@ function parseArgs(): { http: boolean; port: number; host: string } {
   const args = process.argv.slice(2);
   let http = process.env.MCP_HTTP === "true";
   let port = parseInt(process.env.MCP_PORT || "3000", 10);
-  let host = process.env.MCP_HOST || "0.0.0.0";
+  let host = process.env.MCP_HOST || "127.0.0.1";
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--http") {
@@ -235,6 +328,7 @@ export async function loadServerContext(): Promise<ServerContext> {
     loadPreferences(),
     loadToolsConfig(),
   ]);
+  setShimConfig(toolsConfig.raycastApi);
 
   // Load preferences from Raycast's encrypted database and merge with manual prefs
   // Manual prefs override Raycast prefs
@@ -256,8 +350,9 @@ export async function loadServerContext(): Promise<ServerContext> {
   setPreferences(mergedPrefs);
 
   // Load OAuth tokens from Raycast's encrypted database
+  let raycastTokens = new Map<string, TokenSet[]>();
   try {
-    const raycastTokens = loadRaycastTokens();
+    raycastTokens = loadRaycastTokens();
     setRaycastTokens(raycastTokens);
     console.error(
       `raybridge: Loaded OAuth tokens for ${raycastTokens.size} extensions`
@@ -275,12 +370,12 @@ export async function loadServerContext(): Promise<ServerContext> {
 
   const { tools, lookup } = buildToolDefs(extensions);
 
-  const toolCount = extensions.reduce((n, e) => n + e.tools.length, 0);
+  const toolCount = tools.length;
   console.error(
     `raybridge: Registered ${extensions.length} extensions (${toolCount} tools total)`
   );
 
-  return { extensions, tools, lookup };
+  return { extensions, tools, lookup, toolsConfig, preferences: mergedPrefs, raycastTokens };
 }
 
 /**
@@ -293,6 +388,7 @@ export async function reloadServerContext(ctx: ServerContext): Promise<boolean> 
     loadPreferences(),
     loadToolsConfig(),
   ]);
+  setShimConfig(toolsConfig.raycastApi);
 
   // Reload preferences from Raycast DB
   let mergedPrefs = { ...manualPrefs };
@@ -313,8 +409,9 @@ export async function reloadServerContext(ctx: ServerContext): Promise<boolean> 
   setPreferences(mergedPrefs);
 
   // Reload OAuth tokens from Raycast DB
+  let raycastTokens = new Map<string, TokenSet[]>();
   try {
-    const raycastTokens = loadRaycastTokens();
+    raycastTokens = loadRaycastTokens();
     setRaycastTokens(raycastTokens);
     console.error(
       `raybridge: Reloaded OAuth tokens for ${raycastTokens.size} extensions`
@@ -330,17 +427,20 @@ export async function reloadServerContext(ctx: ServerContext): Promise<boolean> 
   const oldToolNames = ctx.tools.map((t) => t.name).sort().join(",");
   const newToolNames = tools.map((t) => t.name).sort().join(",");
 
-  if (oldToolNames === newToolNames) {
-    // No change in tool list (but prefs/tokens still reloaded)
-    return false;
-  }
-
-  // Update context in place
+  // Update context even when the public tool-name set is stable; descriptions,
+  // schemas, preferences, and config gates may still have changed.
   ctx.extensions = extensions;
   ctx.tools = tools;
   ctx.lookup = lookup;
+  ctx.toolsConfig = toolsConfig;
+  ctx.preferences = mergedPrefs;
+  ctx.raycastTokens = raycastTokens;
 
-  const toolCount = extensions.reduce((n, e) => n + e.tools.length, 0);
+  if (oldToolNames === newToolNames) {
+    return false;
+  }
+
+  const toolCount = tools.length;
   console.error(
     `raybridge: Reloaded ${extensions.length} extensions (${toolCount} tools total)`
   );
@@ -351,6 +451,12 @@ export async function reloadServerContext(ctx: ServerContext): Promise<boolean> 
 async function main() {
   const { http, port, host } = parseArgs();
   const apiKey = process.env.MCP_API_KEY;
+
+  if (http && !apiKey) {
+    console.error(
+      "raybridge: WARNING MCP_API_KEY is not set; /mcp will be unauthenticated."
+    );
+  }
 
   const ctx = await loadServerContext();
   const servers: Server[] = [];
@@ -392,7 +498,15 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error("Fatal:", err);
-  process.exit(1);
-});
+function isMainModule(): boolean {
+  const meta = import.meta as ImportMeta & { main?: boolean };
+  if (meta.main) return true;
+  return Boolean(process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href);
+}
+
+if (isMainModule()) {
+  main().catch((err) => {
+    console.error("Fatal:", err);
+    process.exit(1);
+  });
+}

@@ -41,6 +41,8 @@ Extensions that use Raycast UI APIs (`List`, `Detail`, `Form`, and similar) are 
 - [docs/TESTING.md](docs/TESTING.md) — the six suites, execute-mode caveats, hermetic CI candidates
 - [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) — symptom-first fixes for startup, tool-call, and HTTP issues
 - [docs/HTTP_DEPLOYMENT.md](docs/HTTP_DEPLOYMENT.md) — HTTP session model, tunnels, remote exposure security checklist
+- [docs/EXTENSION_COMPAT.md](docs/EXTENSION_COMPAT.md) — which extension patterns work vs degrade, shim coverage table
+- [docs/SHODAN_APIFY.md](docs/SHODAN_APIFY.md) — Shodan/Apify normalizer + Zen analysis workflow
 - [docs/ARCHITECTURE_AND_DECISIONS.md](docs/ARCHITECTURE_AND_DECISIONS.md) — consolidated reference (primer, decision matrix, operational walkthrough, cleanup plan)
 - [docs/finding-extensions.md](docs/finding-extensions.md), [docs/security.md](docs/security.md), [docs/chatgpt-setup.md](docs/chatgpt-setup.md), [docs/infrastructure.md](docs/infrastructure.md)
 

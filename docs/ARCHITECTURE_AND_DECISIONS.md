@@ -181,10 +181,10 @@ Priority 2 (done 2026-06):
 - [x] `docs/TROUBLESHOOTING.md` — README troubleshooting + §4 failure modes, organized by symptom
 - [x] `docs/HTTP_DEPLOYMENT.md` — session/auth model (A6) + tunnels + security checklist; `chatgpt-setup.md` and `infrastructure.md` kept as deep-dive references
 
-Priority 3:
+Priority 3 (done 2026-06):
 
-- [ ] `docs/EXTENSION_COMPAT.md` — which extension patterns work (background/API tools) vs degrade (UI-centric), shim coverage table (`docs/finding-extensions.md`; `src/shims.ts`)
-- [ ] `docs/SHODAN_APIFY.md` — consolidate `docs/shodan-apify/` (normalizer, workflows, example inventory)
+- [x] `docs/EXTENSION_COMPAT.md` — four compatibility tiers, full shim coverage table, per-extension checking commands
+- [x] `docs/SHODAN_APIFY.md` — normalizer CLI, ownership inventory, five Zen workflows, hermetic test note
 
 ---
 

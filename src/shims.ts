@@ -3,6 +3,7 @@ import { spawn } from "node:child_process";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { homedir } from "node:os";
+import { EventEmitter } from "node:events";
 import type { TokenSet } from "./auth.js";
 import type { RaycastApiConfig } from "./config.js";
 
@@ -164,6 +165,15 @@ function createEnumProxy(_name: string): unknown {
       return value;
     },
   });
+}
+
+function createStringEnumProxy(): Record<string, string> {
+  return new Proxy({}, {
+    get(_, prop) {
+      if (typeof prop === "symbol") return undefined;
+      return prop;
+    },
+  }) as Record<string, string>;
 }
 
 // ============================================================================
@@ -534,10 +544,63 @@ async function launchCommand(options: unknown) {
   await runCommand("open", ["--", `raycast://extensions/${owner}/${extensionName}/${commandName}`]);
 }
 
-/** AI - AI operations stub */
+type AIAskResult = Promise<string> & EventEmitter;
+
+const AI_MODEL = createStringEnumProxy();
+
+const AI_CREATIVITY = {
+  None: "none",
+  Low: "low",
+  Medium: "medium",
+  High: "high",
+  Maximum: "maximum",
+  none: "none",
+  low: "low",
+  medium: "medium",
+  high: "high",
+  maximum: "maximum",
+};
+
+function askAI(_prompt: string, _options?: unknown): AIAskResult {
+  const emitter = new EventEmitter();
+  const resultText = "";
+  const promise = Promise.resolve(resultText) as AIAskResult;
+  const eventMethods = [
+    "addListener",
+    "emit",
+    "eventNames",
+    "getMaxListeners",
+    "listenerCount",
+    "listeners",
+    "off",
+    "on",
+    "once",
+    "prependListener",
+    "prependOnceListener",
+    "rawListeners",
+    "removeAllListeners",
+    "removeListener",
+    "setMaxListeners",
+  ] as const;
+
+  for (const method of eventMethods) {
+    (promise as any)[method] = (emitter as any)[method].bind(emitter);
+  }
+
+  queueMicrotask(() => {
+    if (resultText) emitter.emit("data", resultText);
+    emitter.emit("end");
+  });
+
+  return promise;
+}
+
+/** AI - compatibility stub; RayBridge does not call or route LLMs */
 const AI = {
-  ask: async () => "",
-  model: createEnumProxy("model"),
+  ask: askAI,
+  Model: AI_MODEL,
+  model: AI_MODEL,
+  Creativity: AI_CREATIVITY,
 };
 
 // ============================================================================

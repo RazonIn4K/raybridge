@@ -1,6 +1,6 @@
 # Model Compatibility
 
-**RayBridge works with ANY MCP-capable client and any model**, because it only implements the MCP server protocol: a `ListTools` handler and a `CallTool` handler (`src/index.ts:166-260`). It makes no assumptions about which model is on the other end. There is no LLM call anywhere in the codebase; even the `AI.ask` API that Raycast extensions might use is stubbed to return an empty string (`src/shims.ts:538-541`).
+**RayBridge works with ANY MCP-capable client and any model**, because it only implements the MCP server protocol: a `ListTools` handler and a `CallTool` handler (`src/index.ts:166-260`). It makes no assumptions about which model is on the other end. There is no LLM call anywhere in the codebase; the Raycast `AI.ask` API is a compatibility shim that resolves to an empty string while preserving Raycast's Promise + EventEmitter shape (`src/shims.ts`).
 
 ```text
 Non-Raycast MCP client (any model) → RayBridge (stdio/HTTP) → Raycast extension tool → result
@@ -26,3 +26,7 @@ Non-Raycast MCP client (any model) → RayBridge (stdio/HTTP) → Raycast extens
 It does not call an LLM, embed a model, or route between providers. If you want multi-model routing, that belongs in your MCP client or a separate gateway (an MCP-aware router), not in RayBridge.
 
 Boundary to preserve in all docs and code: **RayBridge = tools, client = models.**
+
+## Raycast AI API compatibility
+
+Raycast's `AI.ask(prompt, options)` returns a Promise that is also an EventEmitter for streaming `"data"` events. RayBridge mirrors that runtime shape so installed extensions can load and execute outside Raycast, and exposes `AI.Model`/`AI.Creativity` constants for option-building compatibility. The shim deliberately does not send prompts to Raycast Pro, OpenAI, Anthropic, or any other model provider.

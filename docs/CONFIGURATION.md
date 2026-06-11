@@ -39,7 +39,7 @@ Edit `tools.json` by hand or with the TUI: `raybridge config` (or `bun run confi
 
 ## raycastApi shim gates
 
-Risky Raycast APIs are individually gated (`src/shims.ts:207-213`). A disabled gate throws an actionable error naming the flag.
+Risky Raycast APIs are individually gated (`src/shims.ts:217-223`). A disabled gate throws an actionable error naming the flag.
 
 | Flag | Default | Enables |
 |------|---------|---------|
@@ -50,9 +50,9 @@ Risky Raycast APIs are individually gated (`src/shims.ts:207-213`). A disabled g
 | `enableAppleScript` | `false` | `runAppleScript`, `getSelectedText`*, `getSelectedFinderItems`, `getFrontmostApplication`, `Clipboard.paste` |
 | `enableCommandLaunch` | `false` | `launchCommand` via `raycast://` deep links |
 
-\* `getSelectedText` additionally requires `enableClipboard` (`src/shims.ts:470-486`).
+\* `getSelectedText` additionally requires `enableClipboard` (`src/shims.ts:480-496`).
 
-Each gate has an environment override that beats the config file (`src/shims.ts:25-59`): `RAYBRIDGE_ENABLE_LOCAL_STORAGE`, `RAYBRIDGE_ENABLE_CLIPBOARD`, `RAYBRIDGE_ENABLE_SYSTEM_ACTIONS`, `RAYBRIDGE_ENABLE_DESTRUCTIVE_SYSTEM_ACTIONS`, `RAYBRIDGE_ENABLE_APPLESCRIPT`, `RAYBRIDGE_ENABLE_COMMAND_LAUNCH` (values: `1/true/yes/on`).
+Each gate has an environment override that beats the config file (`src/shims.ts:26-60`): `RAYBRIDGE_ENABLE_LOCAL_STORAGE`, `RAYBRIDGE_ENABLE_CLIPBOARD`, `RAYBRIDGE_ENABLE_SYSTEM_ACTIONS`, `RAYBRIDGE_ENABLE_DESTRUCTIVE_SYSTEM_ACTIONS`, `RAYBRIDGE_ENABLE_APPLESCRIPT`, `RAYBRIDGE_ENABLE_COMMAND_LAUNCH` (values: `1/true/yes/on`).
 
 ## preferences.json
 

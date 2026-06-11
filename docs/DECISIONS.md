@@ -14,10 +14,10 @@ Keeps the ListTools surface small and the schema flat enough for OpenAI-compatib
 A fresh Bun process per call keeps extension state, shim mutations, crashes, and leaks out of the server. `RAYBRIDGE_IN_PROCESS=true` is never for production. Refs: `src/index.ts:222-242`, `src/worker-executor.ts:70-76`.
 
 **AD-4: Provide `@raycast/api` by shimming the module cache, never by rewriting extensions.**
-Extensions stay byte-identical to what Raycast installed. The shim owns the compatibility surface (React/JSX included). Refs: `src/shims.ts:651-708`, `src/loader.ts:11`.
+Extensions stay byte-identical to what Raycast installed. The shim owns the compatibility surface (React/JSX included). Refs: `src/shims.ts:714-771`, `src/loader.ts:11`.
 
 **AD-5: Auto-stub unknown API exports; gate safety-critical APIs explicitly.**
-Heuristic stubs keep unknown imports from crashing tools; clipboard/open/trash/AppleScript/launch are explicit implementations behind `assertShimEnabled`. Refs: `src/shims.ts:110-128`, `src/shims.ts:207-213`.
+Heuristic stubs keep unknown imports from crashing tools; clipboard/open/trash/AppleScript/launch are explicit implementations behind `assertShimEnabled`. Refs: `src/shims.ts:111-129`, `src/shims.ts:217-223`.
 
 **AD-6: HTTP uses per-session `Server` instances sharing one mutable `ServerContext`, 30-min idle expiry.**
 A reload updates every session at once; idle sessions are reaped. Refs: `src/http-server.ts:132-154`, `src/http-server.ts:172-183`.
@@ -28,7 +28,7 @@ A reload updates every session at once; idle sessions are reaped. Refs: `src/htt
 Allowlist mode with an empty extension list and all risky shims off. Refs: `src/config.ts:39-51`, `src/config.ts:127-134`.
 
 **BD-2: RayBridge never refreshes OAuth tokens.**
-Read-only snapshots from Raycast's DB; refresh is Raycast's job. Auth errors point users to re-trigger the extension in Raycast or use a PAT in `preferences.json`. Refs: `src/shims.ts:310-332`, `src/index.ts:250-254`.
+Read-only snapshots from Raycast's DB; refresh is Raycast's job. Auth errors point users to re-trigger the extension in Raycast or use a PAT in `preferences.json`. Refs: `src/shims.ts:320-342`, `src/index.ts:250-254`.
 
 **BD-3: Raycast's live DB is read via temp-copy + sqlcipher + retries.**
 Copy DB+WAL/SHM per query; retry transient lock/corruption errors 3x. Refs: `src/auth.ts:80-151`.
@@ -62,7 +62,7 @@ Kit-unique assets (AGENTS.md, issue templates) were absorbed here. Refs: README 
 ## Environmental
 
 **ED-1: macOS-only on main.**
-Keychain, sqlcipher'd DB, `pbcopy`/`pbpaste`, `osascript`, `~/Library` layout are hard dependencies. Portability work tracks `experimental/windows-support`. Refs: `src/auth.ts:33-46`, `src/shims.ts:222-230`.
+Keychain, sqlcipher'd DB, `pbcopy`/`pbpaste`, `osascript`, `~/Library` layout are hard dependencies. Portability work tracks `experimental/windows-support`. Refs: `src/auth.ts:33-46`, `src/shims.ts:232-240`.
 
 **ED-2: sqlcipher is consumed as a CLI, not a native module.**
 Keeps Bun free of native bindings; resolved from candidates or `SQLCIPHER_BIN`. Refs: `src/auth.ts:8-14,52-68`.

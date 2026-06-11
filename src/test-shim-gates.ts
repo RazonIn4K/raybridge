@@ -52,6 +52,29 @@ async function main() {
     "AppleScript should be disabled by raycastApi gate"
   );
 
+  assert(raycast.environment.canAccess(raycast.AI), "environment.canAccess(AI) should be true");
+  assert(
+    raycast.AI.Model["OpenAI_GPT-4o_mini"] === "OpenAI_GPT-4o_mini",
+    "AI.Model should expose string enum values"
+  );
+  assert(
+    raycast.AI.Creativity.High === "high",
+    "AI.Creativity should expose documented creativity values"
+  );
+
+  const answer = raycast.AI.ask("Suggest 5 jazz songs");
+  let streamEnded = false;
+  assert(typeof answer.on === "function", "AI.ask should return an EventEmitter-compatible promise");
+  answer.on("data", (chunk: string) => {
+    assert(typeof chunk === "string", "AI.ask data chunks should be strings");
+  });
+  answer.on("end", () => {
+    streamEnded = true;
+  });
+  assert(await answer === "", "AI.ask compatibility stub should resolve to an empty string");
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert(streamEnded, "AI.ask should emit an end event");
+
   console.log("Shim gate test passed");
 }
 

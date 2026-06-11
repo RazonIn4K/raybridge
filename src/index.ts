@@ -38,53 +38,19 @@ export interface ServerContext {
   raycastTokens: Map<string, TokenSet[]>;
 }
 
-function getRequiredProperties(schema: Record<string, unknown>): string[] {
-  const required = schema.required;
-  return Array.isArray(required)
-    ? required.filter((value): value is string => typeof value === "string")
-    : [];
-}
-
-function getObjectInputSchema(schema: Record<string, unknown>): Record<string, unknown> {
-  if (schema && schema.type === "object") {
-    return schema;
-  }
-
-  return {
-    type: "object",
-    properties: {},
-    additionalProperties: true,
-  };
-}
-
 function buildExtensionInputSchema(ext: ExtensionEntry): Record<string, unknown> {
   const toolNameEnum = ext.tools.map((t) => t.name);
-  const variants = ext.tools.map((tool) => {
-    const toolSchema = getObjectInputSchema(tool.inputSchema);
-    const required = getRequiredProperties(toolSchema);
 
-    return {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        tool_name: {
-          type: "string",
-          enum: [tool.name],
-          description: `Run the ${tool.name} Raycast tool.`,
-        },
-        input: {
-          ...toolSchema,
-          description: `Input parameters for ${tool.name}.`,
-        },
-      },
-      required: required.length > 0 ? ["tool_name", "input"] : ["tool_name"],
-    };
-  });
-
+  // NOTE: This schema is intentionally a flat top-level object. Do NOT add
+  // `oneOf`/`anyOf`/`allOf`/`enum`/`not` at the top level: OpenAI-compatible
+  // function-calling providers (e.g. opencode routing to Copilot/OpenAI models)
+  // reject those and refuse to load the tool. The exact per-tool parameters are
+  // already documented in each tool's text description (see buildToolDefs), so
+  // the model has everything it needs to populate `input`.
   return {
     type: "object",
     description:
-      "Select exactly one Raycast tool by tool_name and pass that tool's parameters in input.",
+      "Select exactly one Raycast tool by tool_name and pass that tool's parameters in input. See this tool's description for the exact parameters of each tool_name.",
     properties: {
       tool_name: {
         type: "string",
@@ -94,12 +60,11 @@ function buildExtensionInputSchema(ext: ExtensionEntry): Record<string, unknown>
       input: {
         type: "object",
         description:
-          "Input parameters for the selected tool. The oneOf entries below contain the exact schema for each tool_name.",
+          "Input parameters for the selected tool, matching the parameters listed for that tool_name in this tool's description.",
         additionalProperties: true,
       },
     },
     required: ["tool_name"],
-    oneOf: variants,
   };
 }
 

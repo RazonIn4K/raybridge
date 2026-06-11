@@ -32,6 +32,15 @@ To discover which installed extensions are compatible, see [docs/finding-extensi
 
 Extensions that use Raycast UI APIs (`List`, `Detail`, `Form`, and similar) are supported through shims. Extensions whose tools perform background work like API calls, lookups, and transformations work best.
 
+## Documentation
+
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — component map, startup sequence, tool invocation flow, transports
+- [docs/DECISIONS.md](docs/DECISIONS.md) — living ADR list (20 accepted decisions)
+- [docs/CONFIGURATION.md](docs/CONFIGURATION.md) — tools.json, shim gates, preferences.json, all environment variables
+- [docs/MODEL_COMPATIBILITY.md](docs/MODEL_COMPATIBILITY.md) — why any MCP client/model works; RayBridge = tools, client = models
+- [docs/ARCHITECTURE_AND_DECISIONS.md](docs/ARCHITECTURE_AND_DECISIONS.md) — consolidated reference (primer, decision matrix, operational walkthrough, cleanup plan)
+- [docs/finding-extensions.md](docs/finding-extensions.md), [docs/security.md](docs/security.md), [docs/chatgpt-setup.md](docs/chatgpt-setup.md), [docs/infrastructure.md](docs/infrastructure.md)
+
 ## Prerequisites
 
 - macOS with [Raycast](https://raycast.com) installed
@@ -205,60 +214,9 @@ Command-only entries are informational. They are not directly callable as struct
 
 ## Configuration
 
-### Tools configuration
+Everything lives under `~/.config/raybridge/`: `tools.json` controls which extensions/tools are exposed (allowlist mode recommended) and gates risky Raycast APIs (clipboard, system actions, trash, AppleScript, command launch — all off by default); `preferences.json` supplies manual API keys/tokens per extension. Missing config fails closed: nothing is exposed.
 
-Control which extensions and tools are exposed via `~/.config/raybridge/tools.json`:
-
-```json
-{
-  "mode": "allowlist",
-  "raycastApi": {
-    "enableLocalStorage": true,
-    "enableClipboard": false,
-    "enableSystemActions": false,
-    "enableDestructiveSystemActions": false,
-    "enableAppleScript": false,
-    "enableCommandLaunch": false
-  },
-  "extensions": {
-    "extension-name": {
-      "enabled": false
-    },
-    "another-extension": {
-      "enabled": true,
-      "tools": ["specific-tool-1", "specific-tool-2"]
-    }
-  }
-}
-```
-
-- `allowlist` mode: all extensions are disabled unless enabled
-- `blocklist` mode: all extensions are enabled unless disabled
-- `raycastApi.enableLocalStorage`: persist `LocalStorage` values per extension under `~/.config/raybridge/local-storage/`
-- `raycastApi.enableClipboard`: allow Raycast extension tools to use macOS `pbcopy` and `pbpaste`
-- `raycastApi.enableSystemActions`: allow `open` and `showInFinder`
-- `raycastApi.enableDestructiveSystemActions`: allow `trash`; keep this off unless a tool explicitly needs it
-- `raycastApi.enableAppleScript`: allow selected-text, selected-Finder-item, frontmost-app, paste, and `runAppleScript` shims
-- `raycastApi.enableCommandLaunch`: allow extension tools to launch Raycast commands via Raycast deep links
-
-### Extension preferences
-
-Extensions that need API keys or personal tokens can read them from:
-
-```text
-~/.config/raybridge/preferences.json
-```
-
-```json
-{
-  "extension-name": {
-    "personalAccessToken": "your-token",
-    "apiKey": "your-key"
-  }
-}
-```
-
-The extension name matches the `name` field in the extension's `package.json`.
+Full reference, including every shim gate and environment variable: [docs/CONFIGURATION.md](docs/CONFIGURATION.md).
 
 ## n8n Integration
 

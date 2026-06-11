@@ -50,8 +50,8 @@ Models recover better from descriptive tool results. Refs: `src/index.ts:185-213
 
 ## Historical
 
-**HD-1: React/OpenTUI stay in dependencies while the config TUI exists.**
-`src/tui.tsx` statically imports them and `raybridge config` launches it (`src/cli.ts:113-119`). Removing the deps requires retiring the TUI in the same change, on a `feat/` branch.
+**HD-1: React/OpenTUI are optional dependencies; the config TUI is lazy-loaded with a graceful fallback.**
+`src/tui.tsx` (the `raybridge config` UI) is the only consumer of `react`, `@opentui/core`, and `@opentui/react`, and the server never imports it. Those three packages live in `optionalDependencies`, and `src/cli.ts` dynamic-imports the TUI only for the `config` command; if the packages are absent it prints install guidance and points at `tools.json`/`CONFIGURATION.md` instead of crashing (`isMissingTuiDependency` in `src/cli.ts`). The core MCP server and all tool execution have no hard dependency on them. Note: a default `bun install` still installs optional deps, so typecheck remains green; only an explicit `--omit=optional` install drops the TUI. (Chosen over fully retiring the TUI, which would have removed a working feature.)
 
 **HD-2: Extension input schemas are flat (no top-level combinators), permanently.**
 OpenAI-compatible providers reject top-level `oneOf`/`anyOf`/`allOf`/`enum`/`not`. Refs: NOTE at `src/index.ts:44-49`.

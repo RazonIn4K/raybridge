@@ -12,6 +12,7 @@
 - `AGENTS.md` agent guidance and GitHub issue templates.
 
 ### Changed
+- Moved `react`, `@opentui/core`, and `@opentui/react` to `optionalDependencies`. The `raybridge config` TUI is lazy-loaded and prints install guidance if they are absent, so the core MCP server and tool execution no longer hard-require them.
 - Normalized TypeScript, Markdown, and JSON sources to LF line endings; added `.gitattributes` to keep them that way.
 - Expanded shim test coverage (`test:shim-gates`) to assert the AI shim's Promise + EventEmitter shape and the model/creativity constants.
 

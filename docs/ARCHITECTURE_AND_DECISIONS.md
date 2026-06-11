@@ -167,19 +167,19 @@ Rules that prevent 90% of setup failures: absolute bun path, absolute entrypoint
 
 ## 5. Documentation Checklist
 
-Priority 1 (write next, source material in parentheses):
+Priority 1 (done 2026-06):
 
-- [ ] `README.md` — exists; trim to quickstart + links once the docs below land
-- [ ] `docs/ARCHITECTURE.md` — execution flow + component map (§1, §4 here; diagrams from `RAYBRIDGE_VISUAL.md`)
-- [ ] `docs/DECISIONS.md` — the decision matrix as a living ADR list (§3 here)
-- [ ] `docs/CONFIGURATION.md` — tools.json modes, all six `raycastApi` gates, env vars, preferences.json (README config section; `src/config.ts`, `src/shims.ts:26-60`)
-- [ ] `docs/MODEL_COMPATIBILITY.md` — copy §2 verbatim
+- [x] `README.md` — documentation index added; configuration section trimmed to a pointer
+- [x] `docs/ARCHITECTURE.md` — execution flow + component map (§1, §4 here; diagrams from `docs/internal/RAYBRIDGE_VISUAL.md`)
+- [x] `docs/DECISIONS.md` — the decision matrix as a living ADR list (§3 here)
+- [x] `docs/CONFIGURATION.md` — tools.json modes, all six `raycastApi` gates, env vars, preferences.json
+- [x] `docs/MODEL_COMPATIBILITY.md` — §2, plus the Raycast AI shim compatibility note (upstream PR #8)
 
-Priority 2:
+Priority 2 (done 2026-06):
 
-- [ ] `docs/TESTING.md` — actual coverage: six bun suites (`test:config`, `test:logging`, `test:catalog`, `test:worker`, `test:shim-gates`, `test:shims`) plus `typecheck`, aggregated by `verify:repo` (`package.json:35`); worker fixtures in `src/test-fixtures/`; tests are local-OK today, CI aspires to hermetic (no Raycast DB/Keychain dependency)
-- [ ] `docs/TROUBLESHOOTING.md` — README troubleshooting + §4 failure modes, organized by symptom
-- [ ] `docs/HTTP_DEPLOYMENT.md` — merge `docs/chatgpt-setup.md` + `docs/infrastructure.md` + session/auth model (A6)
+- [x] `docs/TESTING.md` — six bun suites + typecheck via `verify:repo`, fixtures, execute-mode caveats, hermetic-CI candidates
+- [x] `docs/TROUBLESHOOTING.md` — README troubleshooting + §4 failure modes, organized by symptom
+- [x] `docs/HTTP_DEPLOYMENT.md` — session/auth model (A6) + tunnels + security checklist; `chatgpt-setup.md` and `infrastructure.md` kept as deep-dive references
 
 Priority 3:
 
@@ -188,16 +188,18 @@ Priority 3:
 
 ---
 
-## 6. Code Cleanup Plan
+## 6. Completed Code Cleanup Record
 
-Current state (verified): `main` = `origin/main` @ 3136d4c, ahead of `upstream/main` (429ad9e). Modified: `package.json`, `src/index.ts`. Untracked: `.github/`, `.vscode/`, `AGENTS.md`, `OPTIMIZATION_PLAN.md`, `RAYBRIDGE_ANALYSIS.md`, `RAYBRIDGE_VISUAL.md`, `README_OPTIMIZED.md`, `doppler.yaml`. Already ignored: `shim-test-results.json`, `test-audit/`, `*.log`, `*.pid`, `.DS_Store`, `node_modules/`.
+This section is a historical record of the cleanup sequence that was completed in the commits after `3136d4c`; it is not the current working-tree state. Current status should always be checked with `git status --short --branch` and `git log --oneline --decorate -n 8`.
 
-Important: `src/index.ts` currently has CRLF line endings, so its 367-line diff is mostly line-ending noise. The real change is the schema flattening: 8 insertions, 43 deletions under `git diff --ignore-all-space`.
+Original verified state: `main` = `origin/main` @ 3136d4c, ahead of `upstream/main` (429ad9e). Modified: `package.json`, `src/index.ts`. Untracked: `.github/`, `.vscode/`, `AGENTS.md`, `OPTIMIZATION_PLAN.md`, `RAYBRIDGE_ANALYSIS.md`, `RAYBRIDGE_VISUAL.md`, `README_OPTIMIZED.md`, `doppler.yaml`. Already ignored: `shim-test-results.json`, `test-audit/`, `*.log`, `*.pid`, `.DS_Store`, `node_modules/`.
+
+At that point, `src/index.ts` had CRLF line endings, so its 367-line diff was mostly line-ending noise. The real change was the schema flattening: 8 insertions, 43 deletions under `git diff --ignore-all-space`.
 
 ```bash
 cd ~/Git-Projects/raybridge
 
-# 0. Baseline: confirm tests pass before touching anything
+# 0. Baseline: confirmed tests pass before touching anything
 bun run verify:repo
 
 # 1. Strip CRLF noise from index.ts so the commit shows only the real change

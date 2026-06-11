@@ -59,7 +59,7 @@ sequenceDiagram
     S-->>C: text content (redacted on error)
 ```
 
-Numbered failure modes for every step are in [ARCHITECTURE_AND_DECISIONS.md](ARCHITECTURE_AND_DECISIONS.md) §4; symptom-first guidance will live in `docs/TROUBLESHOOTING.md`.
+Numbered failure modes for every step are in [ARCHITECTURE_AND_DECISIONS.md](ARCHITECTURE_AND_DECISIONS.md) §4; symptom-first guidance lives in [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 
 Key properties:
 

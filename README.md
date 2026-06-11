@@ -38,6 +38,9 @@ Extensions that use Raycast UI APIs (`List`, `Detail`, `Form`, and similar) are 
 - [docs/DECISIONS.md](docs/DECISIONS.md) — living ADR list (20 accepted decisions)
 - [docs/CONFIGURATION.md](docs/CONFIGURATION.md) — tools.json, shim gates, preferences.json, all environment variables
 - [docs/MODEL_COMPATIBILITY.md](docs/MODEL_COMPATIBILITY.md) — why any MCP client/model works; RayBridge = tools, client = models
+- [docs/TESTING.md](docs/TESTING.md) — the six suites, execute-mode caveats, hermetic CI candidates
+- [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) — symptom-first fixes for startup, tool-call, and HTTP issues
+- [docs/HTTP_DEPLOYMENT.md](docs/HTTP_DEPLOYMENT.md) — HTTP session model, tunnels, remote exposure security checklist
 - [docs/ARCHITECTURE_AND_DECISIONS.md](docs/ARCHITECTURE_AND_DECISIONS.md) — consolidated reference (primer, decision matrix, operational walkthrough, cleanup plan)
 - [docs/finding-extensions.md](docs/finding-extensions.md), [docs/security.md](docs/security.md), [docs/chatgpt-setup.md](docs/chatgpt-setup.md), [docs/infrastructure.md](docs/infrastructure.md)
 

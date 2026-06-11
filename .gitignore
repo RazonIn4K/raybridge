@@ -13,3 +13,7 @@ test-audit/
 # Machine-local
 .vscode/
 doppler.yaml
+
+# Python
+__pycache__/
+*.pyc
